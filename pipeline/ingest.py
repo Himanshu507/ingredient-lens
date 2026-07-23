@@ -12,11 +12,6 @@ import httpx
 
 import config
 
-_USER_AGENT = (
-    "ingredient-lens/0.1 (proof-of-work regulatory data project; "
-    "contact: https://github.com/Himanshu507/ingredient-lens) single-request static-page fetch"
-)
-
 
 def fetch_and_save(
     url: str = config.FDA_SOURCE_URL, out_dir: str | Path = config.RAW_HTML_DIR
@@ -26,7 +21,7 @@ def fetch_and_save(
     Raises on a non-200 response — never silently produces an empty parse.
     """
     response = httpx.get(
-        url, headers={"User-Agent": _USER_AGENT}, timeout=30.0, follow_redirects=True
+        url, timeout=30.0, follow_redirects=True
     )
     response.raise_for_status()
 
