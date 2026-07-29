@@ -1,7 +1,17 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import (
+    Computed,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models._types import str_enum
@@ -62,6 +72,15 @@ class IngredientVersion(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    # DB-generated (`GENERATED ALWAYS AS ... STORED`, created via raw SQL in
+    # the migration -- Alembic autogenerate can't express this DDL). `Computed()`
+    # here doesn't re-issue that DDL; it tells the ORM this column is
+    # server-computed so INSERT/UPDATE never send an explicit value for it
+    # (Postgres rejects any explicit value, even NULL, for a generated column).
+    # See DATABASE_DESIGN.md Section 9.
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english', name)", persisted=True)
     )
 
     ingredient: Mapped["Ingredient"] = relationship(

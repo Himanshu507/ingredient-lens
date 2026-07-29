@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, Text, func
+from sqlalchemy import Computed, DateTime, ForeignKey, Index, Integer, Text, func
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models._types import str_enum
@@ -34,6 +35,10 @@ class Warning(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    # DB-generated -- see ingredient.py's IngredientVersion.search_vector comment.
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english', text)", persisted=True)
     )
 
     product: Mapped["Product"] = relationship()

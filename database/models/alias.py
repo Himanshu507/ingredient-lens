@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, func
+from sqlalchemy import Computed, DateTime, ForeignKey, Index, Numeric, String, func
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models._types import str_enum
@@ -35,6 +36,14 @@ class Alias(Base):
     source_id: Mapped[int | None] = mapped_column(ForeignKey("sources.id", ondelete="RESTRICT"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    # DB-generated -- see database/models/ingredient.py's
+    # IngredientVersion.search_vector comment. This is what lets a keyword
+    # search for "Vitamin C" find canonical "Ascorbic Acid" once that
+    # synonym relationship is known (an Alias row) -- searching the
+    # canonical name alone wouldn't (ENTITY_RESOLUTION.md Section 1).
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english', alias_text)", persisted=True)
     )
 
     source: Mapped["Source | None"] = relationship()

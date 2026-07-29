@@ -35,6 +35,12 @@ extend-exclude = ["database/migrations/versions"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection system requires Depends()/Query()/etc. as
+# argument defaults -- that's the framework's documented API, not the
+# mutable-default-argument bug B008 otherwise correctly guards against.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
