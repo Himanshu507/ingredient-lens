@@ -27,6 +27,7 @@ class ReferenceType(enum.StrEnum):
     SPL_SET_ID = "spl_set_id"
     OPENFDA_ID = "openfda_id"
     FDA_LABELER_CODE = "fda_labeler_code"
+    DUNS = "duns"
 
 
 class WarningCategory(enum.StrEnum):

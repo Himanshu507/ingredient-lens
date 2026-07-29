@@ -40,6 +40,7 @@ def parse_drug_label_record(raw: dict[str, Any]) -> OpenFdaDrugLabelRecord:
         generic_name=_first(openfda_meta.get("generic_name")),
         manufacturer_name=_first(openfda_meta.get("manufacturer_name")),
         substance_name=_tuple(openfda_meta.get("substance_name")),
+        unii=_tuple(openfda_meta.get("unii")),
         product_type=_first(openfda_meta.get("product_type")),
         route=_tuple(openfda_meta.get("route")),
         active_ingredient_text=_tuple(raw.get("active_ingredient")),

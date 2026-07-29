@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from database.models.enums import ProductIngredientRole, WarningCategory
+from ingestion.common.ingredient_link import IngredientLink
 from ingestion.dailymed.document_metadata import DocumentMetadata
 from ingestion.dailymed.dosage_extractor import DosageCandidate
 from ingestion.dailymed.manufacturer_extractor import ManufacturerCandidate
@@ -34,7 +35,8 @@ class DailyMedCanonicalCandidate:
     product_type: str | None
     dosage_form: str | None
     manufacturer_name: str
-    ingredients: tuple[tuple[str, ProductIngredientRole], ...]
+    manufacturer_duns: str | None
+    ingredients: tuple[IngredientLink, ...]
     warnings: tuple[tuple[WarningCategory, str], ...]
 
 
@@ -60,6 +62,9 @@ def transform_spl_document(
         product_type=metadata.product_type,
         dosage_form=dosage.dosage_form,
         manufacturer_name=manufacturer.name,
-        ingredients=tuple((i.name, _ROLE_MAP[i.role]) for i in ingredients),
+        manufacturer_duns=manufacturer.duns_number,
+        ingredients=tuple(
+            IngredientLink(name=i.name, role=_ROLE_MAP[i.role], unii=i.unii) for i in ingredients
+        ),
         warnings=tuple((_CATEGORY_MAP[w.category], w.text) for w in warnings),
     )

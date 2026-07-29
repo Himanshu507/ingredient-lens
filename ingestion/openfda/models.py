@@ -19,6 +19,7 @@ class OpenFdaDrugLabelRecord:
     generic_name: str | None
     manufacturer_name: str | None
     substance_name: tuple[str, ...]
+    unii: tuple[str, ...]
     product_type: str | None
     route: tuple[str, ...]
     active_ingredient_text: tuple[str, ...]

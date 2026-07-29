@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from database.models.enums import WarningCategory
+from database.models.enums import ProductIngredientRole, WarningCategory
+from ingestion.common.ingredient_link import IngredientLink
 from ingestion.openfda.models import OpenFdaDrugLabelRecord
 
 
@@ -18,8 +19,21 @@ class DrugLabelCanonicalCandidate:
     product_name: str
     product_type: str | None
     manufacturer_name: str | None
-    ingredient_names: tuple[str, ...]
+    ingredients: tuple[IngredientLink, ...]
     warnings: tuple[tuple[WarningCategory, str], ...]
+
+
+def _ingredient_links(record: OpenFdaDrugLabelRecord) -> tuple[IngredientLink, ...]:
+    """Pair `substance_name` with `unii` by index — openFDA's `openfda` metadata
+    keeps these as parallel arrays (confirmed against real records). openFDA
+    doesn't distinguish active/inactive at this level, only `substance_name`
+    (typically the active substances) — every ingredient here is ACTIVE.
+    """
+    links = []
+    for i, name in enumerate(record.substance_name):
+        unii = record.unii[i] if i < len(record.unii) else None
+        links.append(IngredientLink(name=name, role=ProductIngredientRole.ACTIVE, unii=unii))
+    return tuple(links)
 
 
 def transform_drug_label_record(record: OpenFdaDrugLabelRecord) -> DrugLabelCanonicalCandidate:
@@ -43,6 +57,6 @@ def transform_drug_label_record(record: OpenFdaDrugLabelRecord) -> DrugLabelCano
         product_name=product_name,
         product_type=record.product_type,
         manufacturer_name=record.manufacturer_name,
-        ingredient_names=record.substance_name,
+        ingredients=_ingredient_links(record),
         warnings=tuple(warnings),
     )

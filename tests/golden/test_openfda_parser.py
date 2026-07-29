@@ -25,6 +25,7 @@ def test_parses_otc_record_with_active_ingredient_and_warnings() -> None:
     assert parsed.generic_name == "SILICEA"
     assert parsed.manufacturer_name == "Rxhomeo Private Limited d.b.a. Rxhomeo, Inc"
     assert parsed.substance_name == ("SILICON DIOXIDE",)
+    assert parsed.unii == ("ETJ7Z6XBU4",)
     assert parsed.product_type == "HUMAN OTC DRUG"
     assert parsed.route == ("ORAL",)
     assert parsed.active_ingredient_text == ("ACTIVE INGREDIENT SILICEA HPUS 2X and higher",)
@@ -43,6 +44,7 @@ def test_parses_prescription_record_with_boxed_warning_and_no_active_ingredient(
     assert parsed.brand_name == "Naproxen"
     assert parsed.manufacturer_name == "A-S Medication Solutions"
     assert parsed.substance_name == ("NAPROXEN",)
+    assert parsed.unii == ("57Y76R9ATQ",)
     assert parsed.product_type == "HUMAN PRESCRIPTION DRUG"
     assert parsed.route == ("ORAL",)
     assert len(parsed.boxed_warning_text) >= 1

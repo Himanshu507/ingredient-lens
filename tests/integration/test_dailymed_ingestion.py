@@ -43,7 +43,12 @@ def test_ingest_creates_canonical_records_and_logs_the_run(db_session: Session) 
     assert _count(db_session, Product) == 3
     assert _count(db_session, Manufacturer) == 3
     assert _count(db_session, Ingredient) == 1 + 5 + 8  # animal, human_rx, otc
-    assert _count(db_session, Reference) == 3
+    # 3 SPL_SET_ID refs (one per product) + 14 UNII refs (every one of the
+    # 1+5+8 ingredients across all three real documents carries a UNII) +
+    # 3 DUNS refs (every manufacturer carries one) -- entity resolution
+    # (Brick 10) attaches an identifier Reference to every newly created
+    # Ingredient/Manufacturer that has one, not just to Products.
+    assert _count(db_session, Reference) == 3 + 14 + 3
     assert _count(db_session, Warning) >= 3
 
 

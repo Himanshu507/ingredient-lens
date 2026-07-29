@@ -49,7 +49,11 @@ def test_ingest_creates_canonical_records_and_logs_the_run(db_session: Session) 
     assert _count(db_session, Product) == 2
     assert _count(db_session, Manufacturer) == 2
     assert _count(db_session, Ingredient) == 2  # one substance each
-    assert _count(db_session, Reference) == 2  # one SPL_SET_ID ref per product
+    # 2 SPL_SET_ID refs (one per product) + 2 UNII refs (one per ingredient,
+    # both fixtures' single substance carries a UNII) -- entity resolution
+    # (Brick 10) attaches an identifier Reference to every newly created
+    # Ingredient/Manufacturer that has one, not just to Products.
+    assert _count(db_session, Reference) == 4
     assert _count(db_session, Warning) >= 2  # at least one warning/boxed_warning each
 
 

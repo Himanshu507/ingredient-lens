@@ -3,9 +3,20 @@
 The identity/version mechanic itself lives in database/access/ (Brick 3);
 this module is the layer above it that both openFDA (Brick 6) and DailyMed
 (Brick 9) share for the parts of "save a product" that don't depend on a
-source's specific field shapes: attaching a natural-key Reference, creating
-Manufacturer/Ingredient rows, and reading back current linked state to decide
-whether anything actually changed.
+source's specific field shapes: attaching a natural-key Reference,
+resolving Manufacturer/Ingredient rows against existing canonical entities
+(Brick 10 — resolution/resolver.py), and reading back current linked state
+to decide whether anything actually changed.
+
+Resolution happens up front, before the "did anything change" comparison —
+not only in the branch that turns out to need an update. This matters once
+resolution is in the picture: two products can share one canonical
+Ingredient under different raw spellings (e.g. "WATER" vs "Purified Water",
+same UNII), so comparing *names* would report "changed" on every re-run for
+whichever product didn't happen to create that entity first. Comparing
+resolved IDs is what actually reflects "did this product's linked entities
+change," and is safe to compute unconditionally: resolving an
+already-existing entity is a read, not a write.
 """
 
 from collections.abc import Sequence
@@ -25,10 +36,8 @@ from database.models.enums import (
 from database.models.product import ProductIngredient
 from database.models.reference import Reference
 from database.models.warning import Warning
-
-
-def normalize_name(name: str) -> str:
-    return " ".join(name.split()).lower()
+from ingestion.common.ingredient_link import IngredientLink
+from resolution.resolver import ResolutionCandidate, resolve_entity
 
 
 def find_product_id_by_reference(
@@ -40,7 +49,9 @@ def find_product_id_by_reference(
     share the same `set_id` identifier space — using the same
     `ReferenceType.SPL_SET_ID` lookup for both means a product ingested first
     by one source and later updated by the other lands on the *same*
-    canonical Product, with no entity resolution required for this case.
+    canonical Product. Products are matched by this natural key alone —
+    ENTITY_RESOLUTION.md's semantic resolution pipeline applies to
+    Ingredient/Manufacturer (below), not Product.
     """
     reference = session.execute(
         sa.select(Reference).where(
@@ -52,37 +63,81 @@ def find_product_id_by_reference(
     return reference.entity_id if reference is not None else None
 
 
-def create_manufacturer(session: Session, name: str | None, source_id: int) -> str | None:
+def resolve_manufacturer(
+    session: Session,
+    name: str | None,
+    source_id: int,
+    *,
+    identifier_type: ReferenceType | None = None,
+    identifier_value: str | None = None,
+) -> str | None:
+    """Resolve (or create) a canonical Manufacturer — ENTITY_RESOLUTION.md Section 8."""
     if not name:
         return None
-    manufacturer = manufacturer_repository(session).create(
-        name=name, normalized_name=normalize_name(name), source_id=source_id
+    candidate = ResolutionCandidate(
+        name=name, identifier_type=identifier_type, identifier_value=identifier_value
     )
-    return manufacturer.id
+    return resolve_entity(
+        session,
+        entity_type=EntityType.MANUFACTURER,
+        candidate=candidate,
+        repository=manufacturer_repository(session),
+        source_id=source_id,
+    )
 
 
-def current_manufacturer_name(session: Session, manufacturer_id: str | None) -> str | None:
-    if manufacturer_id is None:
-        return None
-    manufacturer = manufacturer_repository(session).get_current(manufacturer_id)
-    if manufacturer is None or manufacturer.current_version is None:
-        return None
-    return manufacturer.current_version.name
+def resolve_ingredients(
+    session: Session, ingredients: Sequence[IngredientLink], source_id: int
+) -> tuple[tuple[str, ProductIngredientRole], ...]:
+    """Resolve every ingredient to a canonical Ingredient ID (Brick 10:
+    ENTITY_RESOLUTION.md Strategies 1–2), deduplicated by resolved identity.
+
+    Some real SPL documents legitimately list the same substance more than
+    once (e.g. a multi-part kit repeating a shared diluent per component —
+    confirmed against real DailyMed data: 27 of 169 documents in one sample
+    export). Once resolved, repeated mentions collapse to the same canonical
+    ID; `product_ingredients` has one row per (product_version, ingredient),
+    not per source mention, so the first occurrence's role wins and later
+    duplicates are dropped here rather than causing a primary-key conflict
+    at insert time.
+
+    Returns a sorted `(ingredient_id, role)` tuple — this is both what gets
+    persisted (via `link_resolved_ingredients`) and what the "did anything
+    change" comparison in persistence.py checks against, so the two stay in
+    sync by construction.
+    """
+    seen_ids: set[str] = set()
+    result: list[tuple[str, ProductIngredientRole]] = []
+    for link in ingredients:
+        candidate = ResolutionCandidate(
+            name=link.name,
+            identifier_type=ReferenceType.UNII if link.unii else None,
+            identifier_value=link.unii,
+        )
+        ingredient_id = resolve_entity(
+            session,
+            entity_type=EntityType.INGREDIENT,
+            candidate=candidate,
+            repository=ingredient_repository(session),
+            source_id=source_id,
+        )
+        if ingredient_id in seen_ids:
+            continue
+        seen_ids.add(ingredient_id)
+        result.append((ingredient_id, link.role))
+    return tuple(sorted(result))
 
 
-def link_ingredients(
+def link_resolved_ingredients(
     session: Session,
     product_version_id: int,
-    ingredients: Sequence[tuple[str, ProductIngredientRole]],
-    source_id: int,
+    resolved_ingredients: Sequence[tuple[str, ProductIngredientRole]],
 ) -> None:
-    for name, role in ingredients:
-        ingredient = ingredient_repository(session).create(
-            name=name, normalized_name=normalize_name(name), source_id=source_id
-        )
+    """Persist already-resolved `(ingredient_id, role)` pairs — see `resolve_ingredients`."""
+    for ingredient_id, role in resolved_ingredients:
         session.add(
             ProductIngredient(
-                product_version_id=product_version_id, ingredient_id=ingredient.id, role=role
+                product_version_id=product_version_id, ingredient_id=ingredient_id, role=role
             )
         )
     session.flush()
@@ -91,17 +146,17 @@ def link_ingredients(
 def current_ingredients_with_roles(
     session: Session, product_version_id: int
 ) -> tuple[tuple[str, ProductIngredientRole], ...]:
+    """The currently-linked `(ingredient_id, role)` pairs for a product version —
+    directly from `product_ingredients`, not by name, so it compares like-for-like
+    against `resolve_ingredients`' output regardless of which product first
+    created any shared canonical Ingredient.
+    """
     links = session.execute(
         sa.select(ProductIngredient).where(
             ProductIngredient.product_version_id == product_version_id
         )
     ).scalars()
-    result = []
-    for link in links:
-        ingredient = ingredient_repository(session).get_current(link.ingredient_id)
-        if ingredient is not None and ingredient.current_version is not None:
-            result.append((ingredient.current_version.name, link.role))
-    return tuple(sorted(result))
+    return tuple(sorted((link.ingredient_id, link.role) for link in links))
 
 
 def create_warnings(
