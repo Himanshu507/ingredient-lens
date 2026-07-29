@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Regulatory Intelligence Engine</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  section { margin-bottom: 2.5rem; }
+  input[type="text"] { width: 70%; padding: 0.5rem; font-size: 1rem; }
+  button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+  .group-heading { font-weight: 600; margin-top: 1rem; text-transform: capitalize; }
+  .hit { border: 1px solid #ddd; border-radius: 4px; padding: 0.6rem 0.8rem; margin: 0.4rem 0; }
+  .hit .provenance { color: #666; font-size: 0.85rem; margin-top: 0.3rem; }
+  .status { color: #666; font-style: italic; }
+  .answer-text { white-space: pre-line; border: 1px solid #ddd; border-radius: 4px; padding: 0.8rem; background: #fafafa; }
+  .answer-text.insufficient { color: #a33; background: #fff5f5; }
+  .references { margin-top: 0.6rem; font-size: 0.85rem; color: #444; }
+  .references li { margin: 0.2rem 0; }
+</style>
+</head>
+<body>
+  <h1>Regulatory Intelligence Engine</h1>
+
+  <section id="search-section">
+    <h2>Search</h2>
+    <form id="search-form">
+      <input type="text" id="search-query" placeholder="e.g. vitamin c" required />
+      <button type="submit">Search</button>
+    </form>
+    <div id="search-results"></div>
+  </section>
+
+  <section id="ask-section">
+    <h2>Ask a question</h2>
+    <form id="ask-form">
+      <input type="text" id="ask-question" placeholder="e.g. what liver warnings does acetaminophen have?" required />
+      <button type="submit">Ask</button>
+    </form>
+    <div id="ask-result"></div>
+  </section>
+
+<script>
+function escapeHtml(s) {
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function provenanceHtml(source) {
+  return `<div class="provenance">Source: ${escapeHtml(source.source_system)} / ${escapeHtml(source.endpoint_or_document_type)}, ingested ${escapeHtml(source.ingested_at)}</div>`;
+}
+
+const SEARCH_ENDPOINTS = [
+  ["ingredients", "/ingredients"],
+  ["products", "/products"],
+  ["warnings", "/warnings"],
+  ["recalls", "/recalls"],
+];
+
+function renderHit(entityType, hit) {
+  let label;
+  if (entityType === "ingredients") label = hit.name;
+  else if (entityType === "products") label = hit.name;
+  else if (entityType === "warnings") label = `[${hit.category}] ${hit.text}`;
+  else label = `${hit.reason} (${hit.classification}, ${hit.status})`;
+  return `<div class="hit">${escapeHtml(label)}${provenanceHtml(hit.source)}</div>`;
+}
+
+document.getElementById("search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const query = document.getElementById("search-query").value.trim();
+  const resultsEl = document.getElementById("search-results");
+  if (!query) return;
+  resultsEl.innerHTML = '<p class="status">Searching...</p>';
+
+  try {
+    const responses = await Promise.all(
+      SEARCH_ENDPOINTS.map(([, path]) =>
+        fetch(`${path}?q=${encodeURIComponent(query)}`).then((r) => (r.ok ? r.json() : []))
+      )
+    );
+
+    let html = "";
+    responses.forEach((hits, i) => {
+      const [entityType] = SEARCH_ENDPOINTS[i];
+      if (hits.length === 0) return;
+      html += `<div class="group-heading">${entityType} (${hits.length})</div>`;
+      html += hits.map((hit) => renderHit(entityType, hit)).join("");
+    });
+    resultsEl.innerHTML = html || '<p class="status">No results.</p>';
+  } catch (err) {
+    resultsEl.innerHTML = `<p class="status">Search failed: ${escapeHtml(String(err))}</p>`;
+  }
+});
+
+document.getElementById("ask-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const question = document.getElementById("ask-question").value.trim();
+  const resultEl = document.getElementById("ask-result");
+  if (!question) return;
+  resultEl.innerHTML = '<p class="status">Thinking...</p>';
+
+  try {
+    const response = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    if (!response.ok) {
+      resultEl.innerHTML = `<p class="status">Request failed (${response.status}).</p>`;
+      return;
+    }
+    const answer = await response.json();
+    const cls = answer.insufficient_evidence ? "answer-text insufficient" : "answer-text";
+    let html = `<div class="${cls}">${escapeHtml(answer.text)}</div>`;
+    if (answer.references && answer.references.length > 0) {
+      html += '<ul class="references">';
+      html += answer.references
+        .map(
+          (ref) =>
+            `<li>[${ref.number}] ${escapeHtml(ref.entity_type)} ${escapeHtml(ref.entity_id)} -- ${escapeHtml(ref.source.source_system)} / ${escapeHtml(ref.source.endpoint_or_document_type)}</li>`
+        )
+        .join("");
+      html += "</ul>";
+    }
+    resultEl.innerHTML = html;
+  } catch (err) {
+    resultEl.innerHTML = `<p class="status">Ask failed: ${escapeHtml(String(err))}</p>`;
+  }
+});
+</script>
+</body>
+</html>
