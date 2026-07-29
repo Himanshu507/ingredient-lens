@@ -4,7 +4,7 @@ from typing import Literal
 from sqlalchemy.orm import Session
 
 from database.access.products import product_repository
-from database.models.enums import EntityType, ProductIngredientRole, ReferenceType
+from database.models.enums import EntityType, ReferenceType
 from database.models.reference import Reference
 from ingestion.common.canonical_save import (
     create_manufacturer,
@@ -15,7 +15,7 @@ from ingestion.common.canonical_save import (
     find_product_id_by_reference,
     link_ingredients,
 )
-from ingestion.openfda.transformer import DrugLabelCanonicalCandidate
+from ingestion.dailymed.transformer import DailyMedCanonicalCandidate
 
 SaveOutcome = Literal["created", "updated", "unchanged"]
 
@@ -26,29 +26,19 @@ class SaveResult:
     product_id: str
 
 
-def save_drug_label_candidate(
-    session: Session, candidate: DrugLabelCanonicalCandidate, *, source_id: int
+def save_spl_document_candidate(
+    session: Session, candidate: DailyMedCanonicalCandidate, *, source_id: int
 ) -> SaveResult:
-    """Idempotent upsert keyed on `candidate.natural_key` (openFDA `set_id`).
+    """Idempotent upsert keyed on `candidate.natural_key` (SPL `setId`).
 
-    No cross-record entity resolution here (ROADMAP.md Brick 6 — that's
-    Brick 10/11): a changed product always gets fresh Manufacturer/Ingredient
-    rows, never a match against another product's existing ones. What *is*
-    guaranteed is INGESTION_STRATEGY.md Section 4's idempotency invariant for
-    a single natural key: unchanged data is a no-op, not a new version, and
-    re-running with identical input never creates duplicate rows.
-
-    openFDA's parsed data doesn't distinguish active/inactive ingredients
-    (only `substance_name`, undifferentiated) — every ingredient here is
-    linked with role=ACTIVE. DailyMed's adapter (Brick 9) carries a real
-    per-ingredient role through to the same shared `link_ingredients` helper.
+    Uses the same `Reference(SPL_SET_ID)` lookup openFDA uses
+    (`ingestion/openfda/persistence.py`) — both sources ultimately derive
+    from FDA's own SPL corpus and share this identifier space, so a product
+    first ingested via one source and later updated via the other lands on
+    the *same* canonical Product, each version attributed to whichever
+    Source produced it. No cross-record entity resolution beyond this
+    natural-key match (that's Brick 10/11).
     """
-    # Dosage form isn't reliably extractable from openFDA's free-text label
-    # sections (no structured field) — left null; DailyMed's SPL XML (Brick 8/9)
-    # has a real structured dosage form and populates this instead.
-    dosage_form = None
-    ingredients = [(name, ProductIngredientRole.ACTIVE) for name in candidate.ingredient_names]
-
     existing_product_id = find_product_id_by_reference(
         session, reference_type=ReferenceType.SPL_SET_ID, reference_value=candidate.natural_key
     )
@@ -61,9 +51,11 @@ def save_drug_label_candidate(
         unchanged = (
             current.name == candidate.product_name
             and current.product_type == candidate.product_type
+            and current.dosage_form == candidate.dosage_form
             and current_manufacturer_name(session, current.manufacturer_id)
             == candidate.manufacturer_name
-            and current_ingredients_with_roles(session, current.id) == tuple(sorted(ingredients))
+            and current_ingredients_with_roles(session, current.id)
+            == tuple(sorted(candidate.ingredients))
             and current_warnings(session, product.id, current.version_number)
             == tuple(sorted(candidate.warnings))
         )
@@ -75,11 +67,11 @@ def save_drug_label_candidate(
             product.id,
             name=candidate.product_name,
             product_type=candidate.product_type,
-            dosage_form=dosage_form,
+            dosage_form=candidate.dosage_form,
             manufacturer_id=manufacturer_id,
             source_id=source_id,
         )
-        link_ingredients(session, new_version.id, ingredients, source_id)
+        link_ingredients(session, new_version.id, candidate.ingredients, source_id)
         create_warnings(
             session, product.id, candidate.warnings, new_version.version_number, source_id
         )
@@ -89,12 +81,12 @@ def save_drug_label_candidate(
     product = product_repository(session).create(
         name=candidate.product_name,
         product_type=candidate.product_type,
-        dosage_form=dosage_form,
+        dosage_form=candidate.dosage_form,
         manufacturer_id=manufacturer_id,
         source_id=source_id,
     )
     assert product.current_version is not None
-    link_ingredients(session, product.current_version.id, ingredients, source_id)
+    link_ingredients(session, product.current_version.id, candidate.ingredients, source_id)
     create_warnings(session, product.id, candidate.warnings, 1, source_id)
     session.add(
         Reference(
