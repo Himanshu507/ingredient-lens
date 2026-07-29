@@ -401,6 +401,27 @@ Only engineering layers.
 
 ---
 
+# Getting Started
+
+Prerequisites: Docker, Docker Compose, [uv](https://docs.astral.sh/uv/).
+
+```
+cp .env.example .env   # fill in OPENAI_API_KEY for later bricks; defaults work for Brick 1
+docker compose up --build
+```
+
+This starts PostgreSQL and the FastAPI app (`http://localhost:8000`).
+
+For local (non-Docker) development:
+
+```
+uv sync
+uv run pre-commit install
+make lint typecheck test
+```
+
+---
+
 # Brick-by-Brick Roadmap
 
 ---
