@@ -30,6 +30,7 @@ class IngestionLog(Base):
     records_validated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_updated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_unchanged: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
