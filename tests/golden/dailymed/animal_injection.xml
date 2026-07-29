@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="https://www.accessdata.fda.gov/spl/stylesheet/spl.xsl" type="text/xsl"?>
+<document xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:hl7-org:v3 https://www.accessdata.fda.gov/spl/schema/spl.xsd">
+   <id root="95f864a3-c731-4107-9acb-efc9b740879a"/>
+   <code code="50578-4" codeSystem="2.16.840.1.113883.6.1" displayName="PRESCRIPTION ANIMAL DRUG LABEL"/>
+   <title>
+      <content styleCode="bold"> </content>
+   </title>
+   <effectiveTime value="20260722"/>
+   <setId root="08f1aecd-33c2-457b-8a45-c38fafb3a1c7"/>
+   <versionNumber value="8"/>
+   <author>
+      <time/>
+      <assignedEntity>
+         <representedOrganization>
+            <id extension="966985624" root="1.3.6.1.4.1.519.1"/>
+            <name>Elanco US Inc.</name>
+            <assignedEntity>
+               <assignedOrganization/>
+            </assignedEntity>
+         </representedOrganization>
+      </assignedEntity>
+   </author>
+   <component>
+      <structuredBody>
+         <component>
+            <section>
+               <id root="24058466-8749-4aff-8948-3a09c65ba037"/>
+               <code code="48780-1" codeSystem="2.16.840.1.113883.6.1" displayName="SPL product data elements section"/>
+               <effectiveTime value="20260722"/>
+               <subject>
+                  <manufacturedProduct>
+                     <manufacturedProduct>
+                        <code code="58198-0230" codeSystem="2.16.840.1.113883.6.69"/>
+                        <name>Micotil 300</name>
+                        <formCode code="C42946" codeSystem="2.16.840.1.113883.3.26.1.1" displayName="INJECTION"/>
+                        <asEntityWithGeneric>
+                           <genericMedicine>
+                              <name>Tilmicosin Phosphate</name>
+                           </genericMedicine>
+                        </asEntityWithGeneric>
+                        <ingredient classCode="ACTIB">
+                           <quantity>
+                              <numerator unit="mg" value="300"/>
+                              <denominator unit="mL" value="1"/>
+                           </quantity>
+                           <ingredientSubstance>
+                              <code code="SMH7U1S683" codeSystem="2.16.840.1.113883.4.9"/>
+                              <name>tilmicosin phosphate</name>
+                              <activeMoiety>
+                                 <activeMoiety>
+                                    <code code="XL4103X2E3" codeSystem="2.16.840.1.113883.4.9"/>
+                                    <name>tilmicosin</name>
+                                 </activeMoiety>
+                              </activeMoiety>
+                           </ingredientSubstance>
+                        </ingredient>
+                        <asContent>
+                           <quantity>
+                              <numerator unit="mL" value="250"/>
+                              <denominator value="1"/>
+                           </quantity>
+                           <containerPackagedProduct>
+                              <code/>
+                              <formCode code="C43172" codeSystem="2.16.840.1.113883.3.26.1.1" displayName="BOTTLE, GLASS"/>
+                              <asContent>
+                                 <quantity>
+                                    <numerator unit="1" value="1"/>
+                                    <denominator value="1"/>
+                                 </quantity>
+                                 <containerPackagedProduct>
+                                    <code code="58198-0230-2" codeSystem="2.16.840.1.113883.6.69"/>
+                                    <formCode code="C43182" codeSystem="2.16.840.1.113883.3.26.1.1" displayName="CARTON"/>
+                                 </containerPackagedProduct>
+                              </asContent>
+                           </containerPackagedProduct>
+                        </asContent>
+                     </manufacturedProduct>
+                     <subjectOf>
+                        <approval>
+                           <id extension="NADA140929" root="2.16.840.1.113883.3.150"/>
+                           <code code="C73593" codeSystem="2.16.840.1.113883.3.26.1.1" displayName="NADA"/>
+                           <author>
+                              <territorialAuthority>
+                                 <territory>
+                                    <code code="USA" codeSystem="2.16.840.1.113883.5.28"/>
+                                 </territory>
+                              </territorialAuthority>
+                           </author>
+                        </approval>
+                     </subjectOf>
+                     <subjectOf>
+                        <marketingAct>
+                           <code code="C53292" codeSystem="2.16.840.1.113883.3.26.1.1"/>
+                           <statusCode code="active"/>
+                           <effectiveTime>
+                              <low value="20100219"/>
+                           </effectiveTime>
+                        </marketingAct>
+                     </subjectOf>
+                     <consumedIn>
+                        <substanceAdministration>
+                           <routeCode code="C38299" codeSystem="2.16.840.1.113883.3.26.1.1" displayName="SUBCUTANEOUS"/>
+                        </substanceAdministration>
+                     </consumedIn>
+                  </manufacturedProduct>
+               </subject>
+            </section>
+         </component>
+         <component>
+            <section ID="s1">
+               <id root="6a263d51-1487-42b1-8e4c-e9893c959f9b"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <text>
+                  <paragraph>Approved by FDA under NADA # 140-929</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">
+                        <content styleCode="italics">Micotil</content>™ <content styleCode="italics">300</content>
+                     </content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">
+                        <content styleCode="italics">(tilmicosin injection)</content>
+                     </content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">300 mg tilmicosin, USP as tilmicosin phosphate per mL<br/>For Subcutaneous Use in Cattle and Sheep Only<br/>Solo Para Uso Subcutáneo en Ganado Vacuno y Ovino</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Caution:</content> Federal law restricts this drug to use by or on the order of a licensed veterinarian.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="ID_f2e398cd-11bd-4129-88c7-26639a394cd7">
+               <id root="14f3f138-688e-47be-9eef-1fa6e266fc73"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <text>
+                  <table styleCode="Noautorules" width="100%">
+                     <col width="100%"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Rrule Botrule Lrule Toprule " valign="top">
+                              <paragraph>
+                                 <content styleCode="bold">HUMAN WARNINGS: Not for human use. Injection of this drug in humans has been associated with fatalities. Keep out of reach of children. Administer only with a tube-fed safety syringe. Do not use in automatically powered syringes, single-use syringes, or other delivery devices. Exercise extreme caution to avoid accidental self-injection. In case of human injection, consult a physician immediately and apply ice or cold pack to injection site while avoiding direct contact with the skin. Emergency medical telephone numbers are 1-800-722-0987 or 1-800-428-4441. Avoid contact with skin, eyes, or mucous membranes.</content>
+                              </paragraph>
+                           </td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <table styleCode="Noautorules" width="100%">
+                     <col width="100%"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Rrule Botrule Lrule Toprule " valign="top">
+                              <paragraph>
+                                 <content styleCode="bold">NOTE TO THE PHYSICIAN: The cardiovascular system is the target of toxicity and should be monitored closely. Cardiovascular toxicity may be due to calcium channel blockade. In dogs, administration of intravenous calcium offset Micotil-induced tachycardia and negative inotropy (decreased contractility). Dobutamine partially offset the negative inotropic effects induced by Micotil in dogs. ß-adrenergic antagonists, such as propranolol, exacerbated the negative inotropy of Micotil in dogs. Epinephrine potentiated lethality of Micotil in pigs. This antibiotic persists in tissues for several days.</content>
+                              </paragraph>
+                           </td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <table styleCode="Noautorules" width="100%">
+                     <col width="100%"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Rrule Botrule Lrule Toprule " valign="top">
+                              <paragraph>
+                                 <content styleCode="bold">ADVERTENCIAS PARA EL SER HUMANO: Este producto no es para uso humano. La inyección de este medicamento al ser humano se ha asociado con muertes. Mantenga fuera del alcance de los niños. Utilice únicamente con una jeringa de seguridad con tubo. No use en jeringas operadas automáticamente, jeringas de un solo uso u otros dispositivos de aplicación. Proceda con extrema cautela para evitar la autoinyección accidental. En caso de inyección en seres humanos, consulte inmediatamente a un médico y aplique hielo o una compresa fría en el lugar de la inyección, evitando el contacto directo con la piel. Los números de teléfono para emergencias médicas son 1-800-722-0987 o 1-800-428-4441. Evite el contacto con la piel, los ojos o las membranas mucosas.</content>
+                              </paragraph>
+                           </td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <table styleCode="Noautorules" width="100%">
+                     <col width="100%"/>
+                     <tbody>
+                        <tr>
+                           <td styleCode="Rrule Botrule Lrule Toprule " valign="top">
+                              <paragraph>
+                                 <content styleCode="bold">NOTA PARA EL MÉDICO: El sistema cardiovascular es el blanco de la toxicidad y debe vigilarse estrechamente. La toxicidad cardiovascular puede deberse al bloqueo de los canales de calcio. En los perros, la administración intravenosa de calcio compensó la taquicardia y los efectos inotrópicos negativos (reducción de la contractilidad) inducidos por Micotil (tilmicosina inyectable). La dobutamina compensó parcialmente los efectos inotrópicos negativos inducidos por Micotil en perros. Los antagonistas ß-adrenérgicos, como propranolol, exacerbaron el inotropismo negativo de Micotil en los perros. La epinefrina potenció la letalidad de Micotil en cerdos. Este antibiótico persiste en los tejidos por varios días.</content>
+                              </paragraph>
+                           </td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s2">
+               <id root="11d13965-e22c-47ae-b280-1da949f148c1"/>
+               <code code="34089-3" codeSystem="2.16.840.1.113883.6.1" displayName="DESCRIPTION SECTION"/>
+               <title>Description: </title>
+               <text>
+                  <paragraph>Micotil (tilmicosin injection) is a solution of the antibiotic tilmicosin. Each mL contains 300 mg of tilmicosin, USP as tilmicosin phosphate in 25% propylene glycol, phosphoric acid as needed to adjust pH and water for injection, Q.S. Tilmicosin, USP is produced semi-synthetically and is in the macrolide class of antibiotics.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s3">
+               <id root="9ff148f7-6e6e-4b7e-81f8-3adcc2d245c5"/>
+               <code code="34067-9" codeSystem="2.16.840.1.113883.6.1" displayName="INDICATIONS &amp; USAGE SECTION"/>
+               <title>Indications:</title>
+               <text>
+                  <paragraph>Micotil is indicated for the treatment of bovine respiratory disease (BRD) associated with <content styleCode="italics">Mannheimia haemolytica</content>, <content styleCode="italics">Pasteurella multocida</content> and <content styleCode="italics">Histophilus somni</content> and for the treatment of ovine respiratory disease (ORD) associated with <content styleCode="italics">Mannheimia haemolytica</content>. Micotil is indicated for the control of respiratory disease in cattle at high risk of developing BRD associated with <content styleCode="italics">Mannheimia haemolytica</content>.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s4">
+               <id root="fff31c4d-f681-4433-a163-2e7eaada34a1"/>
+               <code code="34068-7" codeSystem="2.16.840.1.113883.6.1" displayName="DOSAGE &amp; ADMINISTRATION SECTION"/>
+               <title>Dosage and Administration:</title>
+               <text>
+                  <paragraph>
+                     <content styleCode="bold">Follow instructions for activation of the shroud before first usage.</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Inject Subcutaneously in Cattle and Sheep Only. See Safe Handling Practices, Contraindications, and Warnings prior to use. In cattle,</content> administer a single subcutaneous dose of 10 to 20 mg/kg of body weight (1 to 2 mL/30 kg or 1.5 to 3 mL per 100 lbs). <content styleCode="bold">In sheep</content> greater than 15 kg, administer a single subcutaneous dose of 10 mg/kg of body weight (1 mL/30 kg or 1.5 mL per 100 lbs). Do not inject more than 10 mL per injection site.</paragraph>
+                  <paragraph>If no improvement is noted within 48-hours, the diagnosis should be reevaluated.</paragraph>
+                  <paragraph>For cattle and sheep, injection under the skin in the neck is suggested. If not accessible, inject under the skin behind the shoulders and over the ribs.</paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Note:</content> Swelling at the subcutaneous site of injection may be observed.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s5">
+               <id root="6276cbb4-9d4d-4b26-aa29-07bcacc11c4f"/>
+               <code code="34070-3" codeSystem="2.16.840.1.113883.6.1" displayName="CONTRAINDICATIONS SECTION"/>
+               <title>Contraindications:</title>
+               <text>
+                  <paragraph>
+                     <content styleCode="bold">Do not use in automatically powered syringes, single-use syringes, or other delivery devices not specified in the labeling. Do not administer intravenously to cattle or sheep. Intravenous injection in cattle or sheep will be fatal. Do not use in lambs less than 15 kg body weight. Do not administer to animals other than cattle or sheep. Injection of tilmicosin has been shown to be fatal in swine and non-human primates. Death following exposure to tilmicosin injection has been reported to FDA/CVM in goats, rabbits, pheasants, pigs, dogs, deer, cats, alpacas and horses.</content>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="ID_33ce3bab-ddc0-4c40-9202-5f38a7f71288">
+               <id root="58f3a0dd-56a7-4221-b072-3367564c47d6"/>
+               <code code="34071-1" codeSystem="2.16.840.1.113883.6.1" displayName="WARNINGS SECTION"/>
+               <title>Warnings: </title>
+               <text>
+                  <table styleCode="Noautorules" width="100%">
+                     <col width="9%"/>
+                     <col width="75%"/>
+                     <col width="16%"/>
+                     <tbody>
+                        <tr>
+                           <td valign="top">
+                              <renderMultiMedia ID="id598984268" referencedObject="AB313544-7377-43FC-AE66-86FAAA0D24AC"/>
+                           </td>
+                           <td valign="top">
+                              <paragraph>
+                                 <content styleCode="bold">Residue Warnings: Animals intended for human consumption must not be slaughtered within 42 days of the last treatment. Not for use in lactating dairy cattle 20 months of age or older. Use of tilmicosin in this class of cattle may cause milk residues. Not for use in lactating ewes producing milk for human consumption.</content>
+                              </paragraph>
+                           </td>
+                           <td valign="top">
+                              <renderMultiMedia ID="id273208565" referencedObject="ID_15733029-0d98-4f06-b4e3-5ed8f897293c"/>
+                           </td>
+                        </tr>
+                     </tbody>
+                  </table>
+                  <paragraph>
+                     <content styleCode="bold">For Subcutaneous Use in Cattle and Sheep Only. Administer only with a tube-fed safety syringe. Do not use in automatically powered syringes, single-use syringes, or other delivery devices. Contact Elanco at 1-800-428-4441, or your distributor, for a tube-fed safety syringe for use with this product.</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Solo Para Uso Subcutáneo en Ganado Vacuno y Ovino. Administrar únicamente con una jeringa de seguridad con tubo. No administrar con jeringas accionadas automáticamente, jeringas de un solo uso u otros dispositivos de aplicación. Contactar a Elanco al 1-800-428-4441, o al distribuidor, para obtener una jeringa de seguridad con tubo para usar con este producto.</content>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+               <component>
+                  <observationMedia ID="AB313544-7377-43FC-AE66-86FAAA0D24AC">
+                     <text>Triangle l</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-01.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+               <component>
+                  <observationMedia ID="ID_15733029-0d98-4f06-b4e3-5ed8f897293c">
+                     <text>Triangle 2</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-02.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="ID_9fec0d84-c8d5-4ffa-a4eb-cb23331ec44d">
+               <id root="1d05cc07-841e-4648-a557-3e4b00f427e8"/>
+               <code code="42232-9" codeSystem="2.16.840.1.113883.6.1" displayName="PRECAUTIONS SECTION"/>
+               <title>Precautions: </title>
+               <text>
+                  <paragraph>The effects of tilmicosin on bovine and ovine reproductive performance, pregnancy and lactation have not been determined. Intramuscular injection will cause a local reaction which may result in trim loss of edible tissue at slaughter.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s9">
+               <id root="47bd10eb-88eb-474d-9edc-a6425796cedf"/>
+               <code code="34084-4" codeSystem="2.16.840.1.113883.6.1" displayName="ADVERSE REACTIONS SECTION"/>
+               <title>Adverse Reactions:</title>
+               <text>
+                  <paragraph>The following adverse reactions have been reported post-approval: In cattle: injection site swelling and inflammation, lameness, collapse, anaphylaxis/anaphylactoid reactions, decreased food and water consumption, and death.</paragraph>
+                  <paragraph>In sheep: dyspnea and death.</paragraph>
+                  <paragraph>For additional information about reporting adverse drug experiences for animal drugs, contact FDA at 1-888-FDA-VETS or <linkHtml href="http://www.fda.gov/reportanimalae">http://www.fda.gov/reportanimalae</linkHtml>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s10">
+               <id root="b2c9f4b3-e4d7-4f25-adae-ae66b089d9d7"/>
+               <code code="34090-1" codeSystem="2.16.840.1.113883.6.1" displayName="CLINICAL PHARMACOLOGY SECTION"/>
+               <title>Clinical Pharmacology:</title>
+               <text>
+                  <paragraph>A single subcutaneous injection of Micotil (tilmicosin injection) at 10 mg/kg of body weight dose in cattle resulted in peak tilmicosin levels within one hour and detectable levels (0.07 μg/mL) in serum beyond 3 days. However, lung concentrations of tilmicosin remained above the tilmicosin MIC 95% of 3.12 μg/mL for <content styleCode="italics">Mannheimia haemolytica</content> for at least 3 days following the single injection. Serum tilmicosin levels are a poor indicator of total body tilmicosin. The lung/serum tilmicosin ratio in favor of lung tissue appeared to equilibrate by 3 days post-injection at approximately 60. In a study with radioactive tilmicosin, 24% and 68% of the dose was recovered from urine and feces respectively over 21 days. After a single subcutaneous injection of Micotil at 10 mg/kg of body weight, tilmicosin concentrations in excess of 4 μg/mL were maintained in the alveolar macrophages and neutrophils of most cattle for at least 10 days. The clinical relevance of these findings has not been determined.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s11">
+               <id root="beb7f787-0079-4283-85d9-5b017e8f1055"/>
+               <code code="49489-8" codeSystem="2.16.840.1.113883.6.1" displayName="MICROBIOLOGY SECTION"/>
+               <title>Microbiology: </title>
+               <text>
+                  <paragraph>Tilmicosin has an <content styleCode="italics">in vitro</content> antibacterial spectrum that is predominantly Gram-positive with activity against certain Gram-negative microorganisms. <content styleCode="italics">In vitro</content> activity against several <content styleCode="italics">Mycoplasma</content> species has also been observed.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s12">
+               <id root="84bef519-691f-4365-a8ba-7faf4f6430f4"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <title>Effectiveness: </title>
+               <text>
+                  <paragraph>In a multi-location field study, 1508 calves with naturally occurring BRD were treated with Micotil. Responses to treatment were compared to saline-treated controls. A cure was defined as a calf with normal attitude and activity, normal respiration, and a rectal temperature of &lt;104°F on Day 13. The cure rate was significantly higher (P=0.004) in Micotil-treated calves (63.1%) compared to saline-treated calves (29.2%). During the treatment phase of the study, there were 10 BRD-related deaths in the Micotil-treated calves compared to 47 in the saline-treated calves.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s13">
+               <id root="13f29de3-79a1-46e5-a740-d18d3cb8a55b"/>
+               <code code="34091-9" codeSystem="2.16.840.1.113883.6.1" displayName="ANIMAL PHARMACOLOGY &amp; OR TOXICOLOGY SECTION"/>
+               <title>Animal Safety: </title>
+               <text>
+                  <paragraph>A safety study was conducted in feeder calves receiving subcutaneous doses of 20, 30, 40, or 60 mg/kg of body weight, injected 3 times at 72-hour intervals. Death was not seen in any of the treatment groups. Injection site swelling and mild hemorrhage at the injection site were seen in animals in all dosage groups. Lesions were described as being generally more severe and occurred at higher frequency rates in the animals treated with higher doses of tilmicosin. Lameness associated with the injection site was noted in two of twenty-four animals (one animal in the 30 mg/kg body weight treatment group and one animal in the 60 mg/kg treatment group). No other drug related lesions were observed macroscopically or microscopically. Decreases in food and water consumption were noted in all treatment groups compared to the control group.</paragraph>
+                  <paragraph>A separate safety study conducted in feeder calves, subcutaneous doses of 10, 30, or 50 mg/kg of body weight, injected 3 times at 72-hour intervals did not cause any deaths. Edema at the site of injection was noted. The only lesion observed at necropsy was minimal myocardial necrosis in some animals dosed at 50 mg/kg.</paragraph>
+                  <paragraph>In an additional safety study, subcutaneous doses of 150 mg/kg body weight injected at 72-hour intervals resulted in death of two of the four treated animals. Edema was marked at the site of injection. Minimal myocardial necrosis was the only lesion observed at necropsy. Deaths of cattle have been observed with a single intravenous dose of 5 mg/kg of body weight. </paragraph>
+                  <paragraph>In sheep, single subcutaneous injections of 10 mg/kg body weight dose did not cause any deaths and no adverse effects of tilmicosin were observed on blood pressure, heart rate, or respiratory rate.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s14">
+               <id root="208d4472-3b90-4ad5-8b55-1988c078d0cf"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <title>Toxicology: </title>
+               <text>
+                  <paragraph>The heart is the target of toxicity in laboratory and domestic animals given Micotil (tilmicosin injection) by oral or parenteral routes. The primary cardiac effects are increased heart rate (tachycardia) and decreased contractility (negative inotropy). Cardiovascular toxicity may be due to calcium channel blockade.</paragraph>
+                  <paragraph>Upon subcutaneous injection, the acute median lethal dose of tilmicosin in mice is 97 mg/kg, and in rats is 185 mg/kg of body weight. Given orally, the median lethal dose is 800 mg/kg and 2250 mg/kg body weight in fasted and nonfasted rats, respectively.</paragraph>
+                  <paragraph>No compound-related lesions were found at necropsy.</paragraph>
+                  <paragraph>In dogs, intravenous calcium offset Micotil-induced tachycardia and negative inotropy, restoring arterial pulse pressure. Dobutamine partially offset the negative inotropic effects induced by Micotil in dogs.<br/>ß- adrenergic antagonists, such as propranolol, exacerbated the negative inotropy of Micotil in dogs.</paragraph>
+                  <paragraph>In monkeys, a single intramuscular dose of 10 mg/kg body weight caused no signs of toxicity. A single dose of 20 mg/kg body weight caused vomiting and 30 mg/kg body weight caused the death of the only monkey tested.</paragraph>
+                  <paragraph>In swine, intramuscular injection of 10 mg/kg body weight caused increased respiration, emesis, and a convulsion, 20 mg/kg body weight resulted in mortality in 3 of 4 pigs, and 30 mg/kg body weight caused the death of all 4 pigs tested. Injection of 4.5 and 5.6 mg/kg body weight intravenously followed by epinephrine, 1mL (1:1000) intravenously 2 to 6 times, resulted in death of all pigs injected. Pigs given 4.5 mg/kg and 5.6 mg/kg body weight intravenously with no epinephrine all survived. </paragraph>
+                  <paragraph>These results suggest intravenous epinephrine may be contraindicated.</paragraph>
+                  <paragraph>Results of genetic toxicology studies were all negative. Results of teratology and reproduction studies in rats were negative.</paragraph>
+                  <paragraph>The no effect level in dogs after daily oral doses for up to one year is 4 mg/kg of body weight.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s15">
+               <id root="73de1843-f2ee-41d9-8d55-d75541ac4b18"/>
+               <code code="44425-7" codeSystem="2.16.840.1.113883.6.1" displayName="STORAGE AND HANDLING SECTION"/>
+               <title>Storage Conditions: </title>
+               <text>
+                  <paragraph>Store at or below 86°F (30°C). Protect from direct sunlight. Use within 84 days of first puncture. Store upright between product dispensing. Disconnect and clean dosing equipment for storing as per manufacturer’s instructions.</paragraph>
+                  <paragraph>Conservar a 86 °F (30 °C). Proteger de la luz solar directa. Usar dentro de los 84 días de la primera punción. Guardar en posición vertical entre cada suministro del producto. Desconectar y limpiar el dispositivo de dosificación para el almacenamiento según las instrucciones del fabricante.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="s16">
+               <id root="8e26b658-5ee9-4627-88b4-f13fd2c7d430"/>
+               <code code="34069-5" codeSystem="2.16.840.1.113883.6.1" displayName="HOW SUPPLIED SECTION"/>
+               <title>How Supplied: </title>
+               <text>
+                  <paragraph>Micotil (tilmicosin injection) is supplied in 250 mL multi-dose amber glass bottles in a non-removable polymer protector.</paragraph>
+                  <paragraph>Manufactured for: </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Elanco US, Inc. Indianapolis, IN 46221,<br/>Revised: 06/2026</content>
+                  </paragraph>
+                  <paragraph> </paragraph>
+                  <paragraph>Micotil, Elanco and the diagonal bar logo are trademarks of Elanco or its affiliates.</paragraph>
+                  <paragraph>© 2026 Elanco or its affiliates</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+            </section>
+         </component>
+         <component>
+            <section ID="ID_44d8b875-3e7b-4c04-8698-5c2c70084ab3">
+               <id root="15f2063b-a46c-4f2d-9e44-8543e7f98c3b"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <title>Instructions for Activation of the Shroud </title>
+               <text>
+                  <paragraph>Before first usage activate the shroud-vial-system as shown in the pictures.</paragraph>
+                  <paragraph>Administer only with a tube-fed safety syringe. Do not use in automatically powered syringes, single-use syringes, or other delivery devices. This product must be used with the quick-fit connector made specifically for use with Micotil (tilmicosin injection) that attaches to the shroud fitting. To obtain a tube-fed safety syringe and quick-fit connector, contact Elanco at 1-800- 428-4441, or your distributor.</paragraph>
+                  <renderMultiMedia ID="id862408405" referencedObject="C7BC47B8-929E-4E8B-A80D-31838FBFA9B0"/>
+                  <paragraph>Micotil should not be stored in dosing equipment. Dosing equipment should be disconnected from the shroud after each use. Store product upright. The dosing equipment should be cleaned according to the manufacturer’s instructions. Avoid contact with skin, eyes, or mucous membranes.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+               <component>
+                  <observationMedia ID="C7BC47B8-929E-4E8B-A80D-31838FBFA9B0">
+                     <text>Instructions for Activation of the Shroud</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-03.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="s17">
+               <id root="5d223aa7-11be-4c42-9dfb-7bf0062b93eb"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <title>SAFE HANDLING PRACTICES WHEN USING MICOTIL 300 (tilmicosin injection)</title>
+               <text>
+                  <paragraph>Please read this information before you start using Micotil.</paragraph>
+                  <paragraph>This information is a summary and is not intended to take the place of discussions with your veterinarian. Micotil can only be prescribed by a licensed veterinarian who has information specific to your operation. You should discuss with your veterinarian how to use Micotil, human warnings associated with the product and recommended safe handling and use practices. For emergency medical information call 1-800-722-0987 or 1-800-428-4441.</paragraph>
+                  <paragraph>If you have any questions about Micotil, talk with your veterinarian or call Elanco at 1-800-428-4441.</paragraph>
+                  <paragraph>To report an adverse drug event contact Elanco at 1-800-428-4441.</paragraph>
+                  <list listType="ordered">
+                     <item>
+                        <caption>1.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT ARE THE POSSIBLE EFFECTS OF ACCIDENTAL HUMAN INJECTION?</content>
+                        </content>
+                     </item>
+                     <item>
+                        <caption> </caption>Human injections of Micotil have been associated with fatalities. Clinical signs from human exposure include off taste in the mouth, nausea, headache, dizziness, rapid heart rate, chest pain, anxiety, or lightheadedness. Local reactions such as injection site pain, bleeding, swelling or inflammation have been reported.<br/>
+                        <br/>
+                     </item>
+                     <item>
+                        <caption>2.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT SHOULD I DO IN THE CASE OF ACCIDENTAL HUMAN INJECTION?</content>
+                        </content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Immediately seek medical attention.</item>
+                           <item>
+                              <caption>•</caption>Apply ice or cold pack to injection site, while avoiding direct contact with the skin, and transport immediately to a hospital.</item>
+                           <item>
+                              <caption>•</caption>Call 1-800-722-0987 or 1-800-428-4441 for further emergency information.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>3.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT SHOULD MY PHYSICIAN KNOW IN THE CASE OF ACCIDENTAL HUMAN INJECTION?</content>
+                        </content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>The cardiovascular system is the target of toxicity and should be monitored closely.</item>
+                           <item>
+                              <caption>•</caption>Cardiovascular toxicity may be due to calcium channel blockade.</item>
+                           <item>
+                              <caption>•</caption>Intravenous calcium administration reversed the cardiovascular effects of Micotil in dogs and may provide benefit in patients exhibiting low blood pressure (hypotension) or rapid heart rate (tachycardia).</item>
+                           <item>
+                              <caption>•</caption>Dobutamine improved some of the cardiac function in dogs given Micotil.</item>
+                           <item>
+                              <caption>•</caption>Epinephrine increased the toxicity of Micotil in pigs, resulting in death.</item>
+                           <item>
+                              <caption>•</caption>Propranolol (a beta-adrenergic antagonist) further decreased cardiac function in dogs given Micotil.</item>
+                           <item>
+                              <caption>•</caption>The active ingredient in Micotil is tilmicosin phosphate and persists in tissue for several days.</item>
+                           <item>
+                              <caption>•</caption>Call 1-800-722-0987 or 1-800-428-4441 for further emergency information.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>4.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT ARE THE PROPER WAYS TO HANDLE AND STORE MICOTIL?</content>
+                        </content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Store at or below 86°F (30°C), out of direct sunlight, in a safe location, not easily accessible to the general public. Use within 84 days of first puncture. Store upright between product dispensing. Disconnect and clean dosing equipment for storing as per manufacturer’s instructions.</item>
+                           <item>
+                              <caption>•</caption>Avoid contact with skin, eyes, or mucous membranes.</item>
+                           <item>
+                              <caption>•</caption>Read, understand, and follow all label use directions.</item>
+                           <item>
+                              <caption>•</caption>Wash hands thoroughly with soap and water after handling. </item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>5.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT ARE THE PROPER METHODS FOR ADMINISTERING MICOTIL?</content>
+                        </content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Administer to animals handled in a dedicated working facility. Animals should be securely restrained in a working chute prior to administration.</item>
+                           <item>
+                              <caption>•</caption>Always work in a team. Ensure others are notified of your location and expected duration of work.</item>
+                           <item>
+                              <caption>•</caption>For subcutaneous use. Administer only with a tube-fed safety syringe. Do not use in automatically powered syringes, single-use syringes, or other delivery devices. Contact Elanco at 1-800-428-4441, or your distributor, for a tube-fed safety syringe for use with this product.</item>
+                           <item>
+                              <caption>•</caption>Use a 1/2-inch to 5/8-inch, 18- to 16-gauge needle.</item>
+                           <item>
+                              <caption>•</caption>With a single hand on the safety syringe insert the needle subcutaneously, at a top-down angle, while avoiding penetration of underlying muscle.</item>
+                           <item>
+                              <caption>•</caption>For cattle and sheep, injection under the skin in the neck is suggested. If not accessible, inject under the skin behind the shoulders and over the ribs.</item>
+                           <item>
+                              <caption>•</caption>In cattle, administer a single subcutaneous dose of 1.5 to 3.0 mL of Micotil (tilmicosin injection) per 100 lbs of body weight, in either of the two areas noted in the adjacent drawing.<renderMultiMedia ID="id-1675643620" referencedObject="ID_3b9d3676-347b-4c47-8b35-0808c1cabd89"/>
+                           </item>
+                           <item>
+                              <caption>•</caption>For beef cattle, Beef Quality Assurance recommends injection site 1, unless this site is inaccessible or places the operator in a potentially dangerous situation.</item>
+                           <item>
+                              <caption>•</caption>Wash hands thoroughly with soap and water after administration.</item>
+                           <item>
+                              <caption>•</caption>Do not administer intravenously (IV) as IV administration will be fatal.</item>
+                           <item>
+                              <caption>•</caption>Intramuscular injection will cause a local reaction, which may result in trim loss.</item>
+                           <item>
+                              <caption>•</caption>Do not inject more than 10 mL per injection site.</item>
+                           <item>
+                              <caption>•</caption>Do not use in lambs less than 15 kg body weight.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>6.</caption>
+                        <content styleCode="bold">
+                           <content styleCode="underline">WHAT ARE SAFE WAYS TO REMOVE AND CHANGE NEEDLES?</content>
+                        </content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Always follow the manufacturer’s instruction of how to safely remove and change needles from the safety syringe.</item>
+                           <item>
+                              <caption>•</caption>Plan for the safe handling and disposal of needles before use.</item>
+                           <item>
+                              <caption>•</caption>Keep the needle capped until ready to use.</item>
+                           <item>
+                              <caption>•</caption>Avoid recapping a used needle.</item>
+                           <item>
+                              <caption>•</caption>To safely remove used needles, use tools appropriate for the specific type of safety syringe. Do not remove a used needle with your fingers.</item>
+                           <item>
+                              <caption>•</caption>Dispose used needles in an appropriate sharps disposal container. Do not overfill sharps containers and do not put your fingers into a sharps container.</item>
+                           <item>
+                              <caption>•</caption>Never place loose needles in household or public trash cans.</item>
+                        </list>
+                     </item>
+                  </list>
+               </text>
+               <effectiveTime value="20260722"/>
+               <component>
+                  <observationMedia ID="ID_3b9d3676-347b-4c47-8b35-0808c1cabd89">
+                     <text>Figure 1</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-04.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="s18">
+               <id root="a1ae3df9-369b-460c-8b50-6d5e6fa42a37"/>
+               <code code="42229-5" codeSystem="2.16.840.1.113883.6.1" displayName="SPL UNCLASSIFIED SECTION"/>
+               <title>PRÁCTICAS DE MANEJO SEGURO CUANDO SE UTILIZA MICOTIL 300 (tilmicosina inyectable)</title>
+               <text>
+                  <paragraph>Lea esta información antes de comenzar a utilizar Micotil. Esta información es un resumen y no pretende sustituir que lo analice con su veterinario. Micotil solamente puede ser prescrito por un médico veterinario autorizado que tenga la información específica de su intervención. Usted deberá analizar con su veterinario cómo usar Micotil, las advertencias para seres humanos asociadas con este producto, y las prácticas de manipulación y uso seguras recomendadas. Para información médica de emergencia, llame al 1-800-722-0987 o 1-800-428-4441. Si tiene alguna pregunta acerca de Micotil, hable con su veterinario o llame a Elanco al teléfono 1-800-428-4441. Para reportar algún evento adverso del medicamento, póngase en contacto con Elanco llamando al 1-800-428-4441.</paragraph>
+                  <list listType="ordered">
+                     <item>
+                        <caption>1.</caption>
+                        <content styleCode="bold">¿CUÁLES SON LOS POSIBLES EFECTOS DE UNA INYECCIÓN ACCIDENTAL EN UN SER HUMANO?</content>
+                        <br/>Las inyecciones de Micotil al ser humano se asociaron con fallecimientos. Los signos clínicos de la exposición en seres humanos incluyen sabor desagradable en la boca, náuseas, dolor de cabeza, mareos, latidos rápidos, dolor en el pecho, ansiedad o atontamiento. Se han comunicado reacciones locales como dolor, sangrado, tumefacción o inflamación en el sitio de la inyección.<br/>
+                        <br/>
+                     </item>
+                     <item>
+                        <caption>2.</caption>
+                        <content styleCode="bold">¿QUÉ DEBO HACER EN CASO DE UNA INYECCIÓN ACCIDENTAL A UN SER HUMANO?</content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Busque atención médica inmediatamente.</item>
+                           <item>
+                              <caption>•</caption>Aplique hielo o una compresa fría al sitio de la inyección, evitando el contacto directo con la piel, y transporte al paciente inmediatamente a un hospital.</item>
+                           <item>
+                              <caption>•</caption>Llame al 1-800-722-0987 o al 1-800-428-4441 para obtener más información de emergencia.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>3.</caption>
+                        <content styleCode="bold">¿QUÉ DEBE SABER MI MÉDICO EN CASO DE UNA INYECCIÓN ACCIDENTAL A UN SER HUMANO?</content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>El sistema cardiovascular es el blanco de la toxicidad y debe monitorearse estrechamente. </item>
+                           <item>
+                              <caption>•</caption>La toxicidad cardiovascular puede deberse a bloqueo de los canales de calcio.</item>
+                           <item>
+                              <caption>•</caption>La administración intravenosa de calcio revirtió los efectos cardiovasculares de Micotil (tilmicosina inyectable) en los perros y puede ofrecer beneficios a los pacientes que presentan presión arterial baja (hipotensión) o latidos rápidos (taquicardia).</item>
+                           <item>
+                              <caption>•</caption>La dobutamina mejoró parcialmente la función cardíaca en los perros que recibieron Micotil.</item>
+                           <item>
+                              <caption>•</caption>La epinefrina aumentó la toxicidad de Micotil en los cerdos, causándoles la muerte.</item>
+                           <item>
+                              <caption>•</caption>Propranolol (un antagonista ß-adrenérgico) disminuyó aún más la función cardíaca en perros tratados con Micotil.</item>
+                           <item>
+                              <caption>•</caption>El ingrediente activo de Micotil es el fosfato de tilmicosina y persiste en los tejidos por varios días.</item>
+                           <item>
+                              <caption>•</caption>Llame al 1-800-722-0987 o al 1-800-428-4441 para obtener más información de emergencia.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>4.</caption>
+                        <content styleCode="bold">¿CUÁLES SON LAS FORMAS ADECUADAS DE MANEJO Y ALMACENAMIENTO DE MICOTIL?</content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Almacenar a temperatura de 86 °F (30 °C) o menor, fuera de la luz solar directa, en un sitio seguro que no esté fácilmente accesible al público en general. Usar dentro de los 84 días de la primera punción. Guardar en posición vertical entre cada suministro del producto. Desconectar y limpiar el dispositivo de dosificación para el almacenamiento según las instrucciones del fabricante.</item>
+                           <item>
+                              <caption>•</caption>Evitar el contacto con la piel, los ojos o las membranas mucosas.</item>
+                           <item>
+                              <caption>•</caption>Leer, entender y cumplir con todas las instrucciones para el uso incluidas en la etiqueta.</item>
+                           <item>
+                              <caption>•</caption>Lavarse las manos minuciosamente con agua y jabón después de la manipulación.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>5.</caption>
+                        <content styleCode="bold">¿CUÁLES SON LOS MÉTODOS ADECUADOS PARA LA ADMINISTRACIÓN DE MICOTIL?</content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Administre el producto a los animales en instalaciones de trabajo específicas. Antes de la administración, los animales deben estar sujetos de forma segura en una pasarela de trabajo.</item>
+                           <item>
+                              <caption>•</caption>Trabaje siempre en equipo. Asegúrese de que los demás conozcan su ubicación y la duración prevista del trabajo.</item>
+                           <item>
+                              <caption>•</caption>Para uso subcutáneo. Administrar únicamente con una jeringa de seguridad conectada a un tubo. No utilizar jeringas operadas automáticamente, jeringas de un solo uso u otros dispositivos de aplicación. Contactar a Elanco al 1-800-428-4441, o al distribuidor, para obtener una jeringa de seguridad con tubo para usar con este producto.</item>
+                           <item>
+                              <caption>•</caption>Utilizar una aguja de 1/2 pulgada a 5/8 de pulgada, del calibre 18 a 16.</item>
+                           <item>
+                              <caption>•</caption>Con una sola mano en el dispositivo de dosificación, insertar la aguja subcutáneamente, en un ángulo de arriba hacia abajo, evitando penetrar el músculo subyacente.</item>
+                           <item>
+                              <caption>•</caption>Para bovinos y ovinos se recomienda la inyección subcutánea en la región del cuello. Si no fuese accesible, inyectar debajo de la piel detrás de los hombros y sobre las costillas.</item>
+                           <item>
+                              <caption>•</caption>En bovinos, administrar una sola dosis subcutánea de 1.5 a 3.0 ml de Micotil por cada 100 libras de peso, en cualquiera de las dos áreas marcadas en el dibujo anexo. <renderMultiMedia ID="id-190924274" referencedObject="ID_5307565d-3b60-41ae-b0d1-8314dd6f4fb9"/>
+                           </item>
+                           <item>
+                              <caption>•</caption>Para el ganado de carne, la Garantía de Calidad de Carne del Bovino recomienda el sitio de inyección 1, a menos que este sitio sea inaccesible o ponga al operador en una situación potencialmente peligrosa.</item>
+                           <item>
+                              <caption>•</caption>Lavarse las manos minuciosamente con agua y jabón después de la administración.</item>
+                           <item>
+                              <caption>•</caption>No administrar por vía intravenosa (IV) ya que la administración IV causará la muerte.</item>
+                           <item>
+                              <caption>•</caption>La inyección intramuscular causará una reacción local, que puede provocar la pérdida de cortes.</item>
+                           <item>
+                              <caption>•</caption>No inyectar más de 10 ml por sitio de inyección.</item>
+                           <item>
+                              <caption>•</caption>No usar en corderos de menos de 15 kg de peso.</item>
+                        </list>
+                     </item>
+                     <item>
+                        <caption>6.</caption>
+                        <content styleCode="bold">¿CUÁLES SON LAS FORMAS SEGURAS DE RETIRAR Y CAMBIAR LAS AGUJAS?</content>
+                        <list listType="ordered">
+                           <item>
+                              <caption>•</caption>Seguir siempre las instrucciones del fabricante sobre cómo retirar y cambiar las agujas de la jeringa de seguridad de forma segura.</item>
+                           <item>
+                              <caption>•</caption>Planificar la manipulación y eliminación segura de las agujas antes de su uso.</item>
+                           <item>
+                              <caption>•</caption>Mantener la aguja tapada hasta el momento de su uso.</item>
+                           <item>
+                              <caption>•</caption>Evitar volver a tapar una aguja usada.</item>
+                           <item>
+                              <caption>•</caption>Para retirar de forma segura las agujas usadas, utilizar herramientas apropiadas según el tipo específico de jeringa de seguridad. Se debe evitar retirar una aguja usada con los dedos.</item>
+                           <item>
+                              <caption>•</caption>Desechar las agujas usadas en un contenedor apropiado para la eliminación de objetos punzantes. No llenar en exceso los contenedores de objetos punzantes y no meter los dedos en dichos contenedores.</item>
+                           <item>
+                              <caption>•</caption>No colocar nunca agujas sueltas en los cubos de basura domésticos o públicos.</item>
+                        </list>
+                     </item>
+                  </list>
+                  <paragraph>Micotil, Elanco y el logo de la barra diagonal son marcas de Elanco o sus afiliadas.</paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+               <component>
+                  <observationMedia ID="ID_5307565d-3b60-41ae-b0d1-8314dd6f4fb9">
+                     <text>Figure 2</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-05.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+         <component>
+            <section ID="ID_93473486-864e-4249-a282-a7ab30e2289e">
+               <id root="9054413e-9956-4d19-939e-2132acaab800"/>
+               <code code="51945-4" codeSystem="2.16.840.1.113883.6.1" displayName="PACKAGE LABEL.PRINCIPAL DISPLAY PANEL"/>
+               <title>Principal Display Panel </title>
+               <text>
+                  <renderMultiMedia ID="id1087119065" referencedObject="ID_300c526e-3a47-437d-aff0-7662f285acf8"/>
+                  <paragraph>
+                     <content styleCode="bold">
+                        <content styleCode="italics">Elanco</content>™</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">
+                        <content styleCode="italics">Micotil</content>™ <content styleCode="italics">300<sub>TM</sub>
+                        </content>
+                     </content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">250 mL</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">
+                        <content styleCode="italics">(tilmicosin injection)</content>
+                     </content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">300 mg tilmicosin, USP as tilmicosin phosphate per mL</content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">For Subcutaneous Use in Cattle and Sheep Only </content>
+                  </paragraph>
+                  <paragraph>
+                     <content styleCode="bold">Solo Para Uso Subcutáneo en Ganado Vacuno y Ovino</content>
+                  </paragraph>
+               </text>
+               <effectiveTime value="20260722"/>
+               <component>
+                  <observationMedia ID="ID_300c526e-3a47-437d-aff0-7662f285acf8">
+                     <text>Principal Display Panel</text>
+                     <value mediaType="image/jpeg" xsi:type="ED">
+                        <reference value="image-06.jpg"/>
+                     </value>
+                  </observationMedia>
+               </component>
+            </section>
+         </component>
+      </structuredBody>
+   </component>
+</document>
