@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "disclaimer": "Do not rely on openFDA to make decisions regarding medical care. While we make every effort to ensure that data is accurate, you should assume all results are unvalidated. We may limit or otherwise restrict your access to the API in line with our Terms of Service.",
+    "terms": "https://open.fda.gov/terms/",
+    "license": "https://open.fda.gov/license/",
+    "last_updated": "2015-01-01"
+  },
+  "results": {
+    "drug": {
+      "label": {
+        "export_date": "2026-07-29",
+        "total_records": 261077,
+        "partitions": [
+          {
+            "display_name": "/drug/label (part 1 of 14)",
+            "file": "https://download.open.fda.gov/drug/label/drug-label-0001-of-0014.json.zip",
+            "size_mb": "130.30",
+            "records": 20000
+          },
+          {
+            "display_name": "/drug/label (part 2 of 14)",
+            "file": "https://download.open.fda.gov/drug/label/drug-label-0002-of-0014.json.zip",
+            "size_mb": "142.63",
+            "records": 20000
+          }
+        ]
+      }
+    }
+  }
+}
