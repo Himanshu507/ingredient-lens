@@ -21,6 +21,11 @@ services:
       dockerfile: docker/Dockerfile
     env_file:
       - .env
+    environment:
+      # Overrides .env's DATABASE_URL, which points at `localhost` for host-side
+      # tooling (local `alembic`/`pytest` runs against the port-mapped 5432).
+      # Inside the compose network, Postgres is reachable at the `db` service name.
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/ingredient_lens
     ports:
       - "8000:8000"
     depends_on:

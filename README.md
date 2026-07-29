@@ -412,11 +412,19 @@ docker compose up --build
 
 This starts PostgreSQL and the FastAPI app (`http://localhost:8000`).
 
+Apply the database schema (see [`docs/DATABASE_DESIGN.md`](./docs/DATABASE_DESIGN.md)):
+
+```
+docker compose exec api uv run alembic upgrade head
+```
+
 For local (non-Docker) development:
 
 ```
 uv sync
 uv run pre-commit install
+docker compose up -d db   # local Postgres for tests/migrations
+uv run alembic upgrade head
 make lint typecheck test
 ```
 
