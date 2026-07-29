@@ -58,6 +58,7 @@ class IngestionRunStatus(enum.StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    PARTIAL = "partial"
 
 
 class ReviewStatus(enum.StrEnum):
