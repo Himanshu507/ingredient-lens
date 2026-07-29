@@ -66,3 +66,11 @@ class ReviewStatus(enum.StrEnum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+class DeadLetterStage(enum.StrEnum):
+    """The pipeline stage a record was rejected at — ERROR_HANDLING.md Section 3."""
+
+    VALIDATION = "validation"
+    TRANSFORM = "transform"
+    SAVE = "save"

@@ -6,10 +6,13 @@ from datetime import UTC, datetime
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from database.models.enums import IngestionRunStatus
+from database.models.dead_letter import IngestionDeadLetter
+from database.models.enums import DeadLetterStage, IngestionRunStatus
 from database.models.ingestion_log import IngestionLog
 from database.models.source import Source
+from ingestion.common.dead_letter import write_dead_letter
 from ingestion.openfda.models import OpenFdaDrugLabelRecord
+from ingestion.openfda.parser import parse_drug_label_record
 from ingestion.openfda.persistence import save_drug_label_candidate
 from ingestion.openfda.transformer import transform_drug_label_record
 from ingestion.openfda.validator import validate_drug_label_record
@@ -146,11 +149,41 @@ def ingest_drug_label_records(
             rejection_reasons = validate_drug_label_record(record)
             if rejection_reasons:
                 counts["rejected"] += 1
+                write_dead_letter(
+                    session,
+                    source="openfda",
+                    run_id=run_id,
+                    stage=DeadLetterStage.VALIDATION,
+                    record_identifier=record.set_id,
+                    raw_payload=record.raw,
+                    error="; ".join(rejection_reasons),
+                )
             else:
                 counts["validated"] += 1
-                candidate = transform_drug_label_record(record)
-                result = save_drug_label_candidate(session, candidate, source_id=source_row.id)
-                counts[result.outcome] += 1
+                # A savepoint, not the outer transaction: one record's
+                # transform/save failure (a malformed field, an unexpected
+                # constraint violation) is record-level (ERROR_HANDLING.md
+                # Section 1) -- dead-letter it and continue, without losing
+                # every record already saved earlier in this run.
+                try:
+                    with session.begin_nested():
+                        candidate = transform_drug_label_record(record)
+                        result = save_drug_label_candidate(
+                            session, candidate, source_id=source_row.id
+                        )
+                except Exception as exc:
+                    counts["rejected"] += 1
+                    write_dead_letter(
+                        session,
+                        source="openfda",
+                        run_id=run_id,
+                        stage=DeadLetterStage.SAVE,
+                        record_identifier=record.set_id,
+                        raw_payload=record.raw,
+                        error=str(exc),
+                    )
+                else:
+                    counts[result.outcome] += 1
 
             if processed_this_attempt % checkpoint_batch_size == 0:
                 _checkpoint(
@@ -161,6 +194,9 @@ def ingest_drug_label_records(
                 )
                 session.flush()
     except Exception:
+        # Escapes the per-record handling above -- a transient
+        # infrastructure or systemic failure (Section 1), not a single bad
+        # record. The run is marked partial/resumable, not silently retried.
         log.status = IngestionRunStatus.PARTIAL
         session.flush()
         raise
@@ -173,6 +209,33 @@ def ingest_drug_label_records(
     )
     log.status = IngestionRunStatus.COMPLETED
     log.completed_at = datetime.now(UTC)
+    session.flush()
+
+    return log
+
+
+def reprocess_dead_letters(
+    session: Session, dead_letters: Iterable[IngestionDeadLetter]
+) -> IngestionLog:
+    """Re-run dead-lettered openFDA records through the exact same
+    validate -> transform -> save pipeline as live ingestion
+    (ERROR_HANDLING.md Section 3) — not a special-cased recovery path, so a
+    record that's genuinely fixed now benefits from the same idempotency
+    guarantees as any other input. Tracked under a distinct endpoint suffix
+    so reprocessing runs don't interleave checkpoint state with live runs.
+
+    Marks each dead letter `reprocessed_at` once attempted, whether or not
+    it succeeds — if the root cause wasn't actually fixed, the pipeline
+    dead-letters it again (a new row, with the current failure reason)
+    rather than silently retrying the same broken input forever.
+    """
+    dead_letters = list(dead_letters)
+    records = [parse_drug_label_record(dl.raw_payload) for dl in dead_letters]
+    log = ingest_drug_label_records(session, records, endpoint="drug/label:reprocess")
+
+    now = datetime.now(UTC)
+    for dead_letter in dead_letters:
+        dead_letter.reprocessed_at = now
     session.flush()
 
     return log

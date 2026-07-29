@@ -1,13 +1,17 @@
+import base64
 import uuid
 from collections.abc import Iterable
 from datetime import UTC, datetime
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from database.models.enums import IngestionRunStatus
+from database.models.dead_letter import IngestionDeadLetter
+from database.models.enums import DeadLetterStage, IngestionRunStatus
 from database.models.ingestion_log import IngestionLog
 from database.models.source import Source
+from ingestion.common.dead_letter import write_dead_letter
 from ingestion.dailymed.document_metadata import DocumentMetadataError, extract_document_metadata
 from ingestion.dailymed.dosage_extractor import DosageExtractor
 from ingestion.dailymed.extraction import SplPackage
@@ -27,6 +31,21 @@ _ingredient_extractor = IngredientExtractor()
 _manufacturer_extractor = ManufacturerExtractor()
 _dosage_extractor = DosageExtractor()
 _warning_extractor = WarningExtractor()
+
+
+def _package_raw_payload(package: SplPackage) -> dict[str, Any]:
+    """JSONB can't hold raw bytes -- the XML is base64-encoded inside the payload."""
+    return {
+        "package_name": package.package_name,
+        "xml_base64": base64.b64encode(package.xml_bytes).decode("ascii"),
+    }
+
+
+def _package_from_raw_payload(raw_payload: dict[str, Any]) -> SplPackage:
+    return SplPackage(
+        package_name=raw_payload["package_name"],
+        xml_bytes=base64.b64decode(raw_payload["xml_base64"]),
+    )
 
 
 def find_resumable_run(session: Session, *, source: str, endpoint: str) -> IngestionLog | None:
@@ -144,8 +163,17 @@ def ingest_spl_documents(
 
             try:
                 metadata = extract_document_metadata(package.xml_bytes)
-            except DocumentMetadataError:
+            except DocumentMetadataError as exc:
                 counts["rejected"] += 1
+                write_dead_letter(
+                    session,
+                    source="dailymed",
+                    run_id=run_id,
+                    stage=DeadLetterStage.VALIDATION,
+                    record_identifier=package.package_name,
+                    raw_payload=_package_raw_payload(package),
+                    error=str(exc),
+                )
                 completed_packages.add(package.package_name)
                 processed_since_checkpoint += 1
                 continue
@@ -158,14 +186,42 @@ def ingest_spl_documents(
             rejection_reasons = validate_spl_document(metadata, ingredients, manufacturer)
             if rejection_reasons:
                 counts["rejected"] += 1
+                write_dead_letter(
+                    session,
+                    source="dailymed",
+                    run_id=run_id,
+                    stage=DeadLetterStage.VALIDATION,
+                    record_identifier=metadata.set_id,
+                    raw_payload=_package_raw_payload(package),
+                    error="; ".join(rejection_reasons),
+                )
             else:
                 counts["validated"] += 1
                 assert manufacturer is not None
-                candidate = transform_spl_document(
-                    metadata, ingredients, manufacturer, dosage, warnings
-                )
-                result = save_spl_document_candidate(session, candidate, source_id=source_row.id)
-                counts[result.outcome] += 1
+                # A savepoint, not the outer transaction -- see
+                # ingestion/openfda/run.py for why: one document's
+                # transform/save failure is record-level, not run-level.
+                try:
+                    with session.begin_nested():
+                        candidate = transform_spl_document(
+                            metadata, ingredients, manufacturer, dosage, warnings
+                        )
+                        result = save_spl_document_candidate(
+                            session, candidate, source_id=source_row.id
+                        )
+                except Exception as exc:
+                    counts["rejected"] += 1
+                    write_dead_letter(
+                        session,
+                        source="dailymed",
+                        run_id=run_id,
+                        stage=DeadLetterStage.SAVE,
+                        record_identifier=metadata.set_id,
+                        raw_payload=_package_raw_payload(package),
+                        error=str(exc),
+                    )
+                else:
+                    counts[result.outcome] += 1
 
             completed_packages.add(package.package_name)
             processed_since_checkpoint += 1
@@ -176,6 +232,10 @@ def ingest_spl_documents(
                 )
                 session.flush()
     except Exception:
+        # Escapes the per-package handling above -- a transient
+        # infrastructure or systemic failure (ERROR_HANDLING.md Section 1),
+        # not a single bad document. The run is marked partial/resumable,
+        # not silently retried.
         log.status = IngestionRunStatus.PARTIAL
         session.flush()
         raise
@@ -183,6 +243,29 @@ def ingest_spl_documents(
     _checkpoint(log, endpoint=endpoint, completed_packages=completed_packages, counts=counts)
     log.status = IngestionRunStatus.COMPLETED
     log.completed_at = datetime.now(UTC)
+    session.flush()
+
+    return log
+
+
+def reprocess_dead_letters(
+    session: Session, dead_letters: Iterable[IngestionDeadLetter]
+) -> IngestionLog:
+    """Re-run dead-lettered DailyMed documents through the exact same
+    extract -> validate -> transform -> save pipeline as live ingestion
+    (ERROR_HANDLING.md Section 3), tracked under a distinct endpoint suffix
+    so reprocessing runs don't interleave checkpoint state with live runs.
+
+    Marks each dead letter `reprocessed_at` once attempted, whether or not
+    it succeeds — see `ingestion.openfda.run.reprocess_dead_letters` for why.
+    """
+    dead_letters = list(dead_letters)
+    packages = [_package_from_raw_payload(dl.raw_payload) for dl in dead_letters]
+    log = ingest_spl_documents(session, packages, endpoint="spl:reprocess")
+
+    now = datetime.now(UTC)
+    for dead_letter in dead_letters:
+        dead_letter.reprocessed_at = now
     session.flush()
 
     return log
