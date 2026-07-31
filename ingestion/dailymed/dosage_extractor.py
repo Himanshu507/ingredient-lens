@@ -7,6 +7,10 @@ NS = {"v3": "urn:hl7-org:v3"}
 INGREDIENTS_SECTION_CODE = "48780-1"  # SPL product data elements section
 DOSAGE_ADMINISTRATION_SECTION_CODE = "34068-7"  # DOSAGE & ADMINISTRATION SECTION
 
+# See ingestion/dailymed/document_metadata.py's _PARSER comment: real SPL
+# documents legitimately nest deeper than lxml's default 256-depth guard.
+_PARSER = etree.XMLParser(huge_tree=True)
+
 
 @dataclass(frozen=True)
 class DosageCandidate:
@@ -26,7 +30,7 @@ class DosageExtractor:
     """
 
     def extract(self, xml_bytes: bytes) -> DosageCandidate:
-        root = etree.fromstring(xml_bytes)
+        root = etree.fromstring(xml_bytes, parser=_PARSER)
 
         form_matches = root.xpath(
             "//v3:section[v3:code[@code=$code]]//v3:formCode/@displayName",

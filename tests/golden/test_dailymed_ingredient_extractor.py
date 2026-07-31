@@ -78,3 +78,17 @@ def test_document_with_no_ingredients_section_yields_empty_list() -> None:
     candidates = _extract("no_ingredients_section.xml")
 
     assert candidates == []
+
+
+def test_deeply_nested_document_parses_without_crashing() -> None:
+    """Every extractor re-parses the XML independently -- confirms this one
+    also survives past lxml's default 256-element depth guard, matching
+    document_metadata.py's fix (real crash hit while bulk-ingesting
+    DailyMed's human_rx full release)."""
+    depth = 300
+    nested = ("<a>" * depth) + "text" + ("</a>" * depth)
+    doc = b'<document xmlns="urn:hl7-org:v3">' + nested.encode() + b"</document>"
+
+    candidates = IngredientExtractor().extract(doc)
+
+    assert candidates == []

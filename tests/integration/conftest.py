@@ -33,7 +33,14 @@ def db_session() -> Generator[Session, None, None]:
 
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    # join_transaction_mode="create_savepoint": if test/application code calls
+    # session.commit(), SQLAlchemy commits an inner SAVEPOINT, not the real
+    # outer `transaction` -- without this, a commit() anywhere in the call
+    # stack ends the real transaction early, and this fixture's rollback()
+    # below becomes a no-op on an already-completed transaction, permanently
+    # persisting whatever that test wrote. This is SQLAlchemy's own
+    # documented fix for exactly this failure mode.
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
     try:
         yield session
     finally:

@@ -17,6 +17,10 @@ UNII_CODE_SYSTEM = "2.16.840.1.113883.4.9"
 _ACTIVE_CLASS_CODES = {"ACTIB", "ACTIM", "ACTIR"}
 _INACTIVE_CLASS_CODES = {"IACT"}
 
+# See ingestion/dailymed/document_metadata.py's _PARSER comment: real SPL
+# documents legitimately nest deeper than lxml's default 256-depth guard.
+_PARSER = etree.XMLParser(huge_tree=True)
+
 
 def _role_for_class_code(class_code: str | None) -> IngredientRole | None:
     if class_code in _ACTIVE_CLASS_CODES:
@@ -60,7 +64,7 @@ class IngredientExtractor:
     """
 
     def extract(self, xml_bytes: bytes) -> list[IngredientCandidate]:
-        root = etree.fromstring(xml_bytes)
+        root = etree.fromstring(xml_bytes, parser=_PARSER)
         sections = root.xpath(
             "//v3:section[v3:code[@code=$code]]", namespaces=NS, code=INGREDIENTS_SECTION_CODE
         )

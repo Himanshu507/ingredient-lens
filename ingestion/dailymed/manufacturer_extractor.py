@@ -7,6 +7,10 @@ NS = {"v3": "urn:hl7-org:v3"}
 # HL7/FDA SPL's standardized codeSystem OID for DUNS numbers.
 DUNS_CODE_SYSTEM = "1.3.6.1.4.1.519.1"
 
+# See ingestion/dailymed/document_metadata.py's _PARSER comment: real SPL
+# documents legitimately nest deeper than lxml's default 256-depth guard.
+_PARSER = etree.XMLParser(huge_tree=True)
+
 
 @dataclass(frozen=True)
 class ManufacturerCandidate:
@@ -25,7 +29,7 @@ class ManufacturerExtractor:
     """
 
     def extract(self, xml_bytes: bytes) -> ManufacturerCandidate | None:
-        root = etree.fromstring(xml_bytes)
+        root = etree.fromstring(xml_bytes, parser=_PARSER)
         orgs = root.xpath(
             "/v3:document/v3:author/v3:assignedEntity/v3:representedOrganization",
             namespaces=NS,

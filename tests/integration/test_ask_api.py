@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -5,12 +6,34 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import ai.answer as answer_module
+from ai.llm import CompletionResult, ToolCall
+from ai.prompting import INSUFFICIENT_EVIDENCE_TEXT
 from api.deps import get_session
 from api.main import app
 from database.access.ingredients import ingredient_repository
 from database.models.alias import Alias
 from database.models.enums import EntityType
 from database.models.source import Source
+
+
+def _tool_call(query: str) -> CompletionResult:
+    return CompletionResult(
+        content=None,
+        tool_calls=[ToolCall(id="call-1", name="search_evidence", arguments={"query": query})],
+    )
+
+
+def _final(text: str) -> CompletionResult:
+    return CompletionResult(content=text, tool_calls=[])
+
+
+def _mock_turns(monkeypatch: pytest.MonkeyPatch, turns: list[CompletionResult]) -> None:
+    iterator: Iterator[CompletionResult] = iter(turns)
+
+    def _fake(messages: list[object], *, tools: list[object]) -> CompletionResult:
+        return next(iterator)
+
+    monkeypatch.setattr(answer_module, "generate_with_tools", _fake)
 
 
 def _make_source(session: Session) -> int:
@@ -30,37 +53,36 @@ def test_ask_endpoint_returns_cited_answer(
 ) -> None:
     source_id = _make_source(db_session)
     ingredient = ingredient_repository(db_session).create(
-        name="Ascorbic Acid", normalized_name="ascorbic acid", source_id=source_id
+        name="Zyxwvutest Compound", normalized_name="zyxwvutest compound", source_id=source_id
     )
     db_session.add(
         Alias(
             entity_type=EntityType.INGREDIENT,
             entity_id=ingredient.id,
-            alias_text="Vitamin C",
-            normalized_alias_text="vitamin c",
+            alias_text="Zyxwvutest C",
+            normalized_alias_text="zyxwvutest c",
             confidence=1.0,
             source_id=source_id,
         )
     )
     db_session.flush()
 
-    monkeypatch.setattr(
-        answer_module,
-        "generate",
-        lambda system_prompt, user_prompt: "This product contains Vitamin C. [1]",
+    _mock_turns(
+        monkeypatch,
+        [_tool_call("zyxwvutest c"), _final("This product contains Zyxwvutest C. [1]")],
     )
 
     app.dependency_overrides[get_session] = lambda: db_session
     try:
         client = TestClient(app)
-        response = client.post("/ask", json={"question": "vitamin c"})
+        response = client.post("/ask", json={"question": "zyxwvutest c"})
     finally:
         app.dependency_overrides.pop(get_session, None)
 
     assert response.status_code == 200
     body = response.json()
     assert body["insufficient_evidence"] is False
-    assert body["text"] == "This product contains Vitamin C. [1]"
+    assert body["text"] == "This product contains Zyxwvutest C. [1]"
     assert len(body["references"]) == 1
     assert body["references"][0]["entity_id"] == ingredient.id
 
@@ -68,10 +90,10 @@ def test_ask_endpoint_returns_cited_answer(
 def test_ask_endpoint_returns_insufficient_evidence_for_empty_retrieval(
     db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def _fail_if_called(*args: object, **kwargs: object) -> str:
-        raise AssertionError("LLM must not be called when retrieval returns nothing")
-
-    monkeypatch.setattr(answer_module, "generate", _fail_if_called)
+    _mock_turns(
+        monkeypatch,
+        [_tool_call("unobtainium"), _final(INSUFFICIENT_EVIDENCE_TEXT)],
+    )
 
     app.dependency_overrides[get_session] = lambda: db_session
     try:

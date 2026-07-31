@@ -41,21 +41,21 @@ def test_retrieve_finds_ingredient_via_alias_with_resolution_confidence(
     entity_resolution_confidence, separate from retrieval_confidence."""
     source_id = _make_source(db_session)
     ingredient = ingredient_repository(db_session).create(
-        name="Ascorbic Acid", normalized_name="ascorbic acid", source_id=source_id
+        name="Zyxwvutest Compound", normalized_name="zyxwvutest compound", source_id=source_id
     )
     db_session.add(
         Alias(
             entity_type=EntityType.INGREDIENT,
             entity_id=ingredient.id,
-            alias_text="Vitamin C",
-            normalized_alias_text="vitamin c",
+            alias_text="Zyxwvutest C",
+            normalized_alias_text="zyxwvutest c",
             confidence=0.93,
             source_id=source_id,
         )
     )
     db_session.flush()
 
-    results = retrieve(db_session, "vitamin c")
+    results = retrieve(db_session, "zyxwvutest c")
 
     assert len(results) == 1
     hit = results[0]
@@ -69,11 +69,11 @@ def test_retrieve_finds_ingredient_via_alias_with_resolution_confidence(
 def test_retrieve_direct_name_match_has_no_resolution_confidence(db_session: Session) -> None:
     source_id = _make_source(db_session)
     ingredient_repository(db_session).create(
-        name="Naproxen", normalized_name="naproxen", source_id=source_id
+        name="Qwexnol", normalized_name="qwexnol", source_id=source_id
     )
     db_session.flush()
 
-    results = retrieve(db_session, "naproxen")
+    results = retrieve(db_session, "qwexnol")
 
     assert len(results) == 1
     assert results[0].entity_resolution_confidence is None
@@ -85,10 +85,10 @@ def test_retrieve_merges_and_ranks_across_entity_types(db_session: Session) -> N
         name="Acme Pharma", normalized_name="acme pharma", source_id=source_id
     )
     ingredient = ingredient_repository(db_session).create(
-        name="Ascorbic Acid", normalized_name="ascorbic acid", source_id=source_id
+        name="Zyxwvutest Compound", normalized_name="zyxwvutest compound", source_id=source_id
     )
     product = product_repository(db_session).create(
-        name="Ascorbic Acid Tablets",
+        name="Zyxwvutest Compound Tablets",
         product_type="dietary supplement",
         dosage_form="tablet",
         manufacturer_id=manufacturer.id,
@@ -106,7 +106,7 @@ def test_retrieve_merges_and_ranks_across_entity_types(db_session: Session) -> N
         Warning(
             product_id=product.id,
             category=WarningCategory.PRECAUTION,
-            text="Ascorbic acid may cause stomach upset in large doses",
+            text="Zyxwvutest compound may cause stomach upset in large doses",
             status=RecordStatus.ACTIVE,
             version_number=1,
             source_id=source_id,
@@ -116,7 +116,7 @@ def test_retrieve_merges_and_ranks_across_entity_types(db_session: Session) -> N
         Recall(
             product_id=product.id,
             manufacturer_id=manufacturer.id,
-            reason="Ascorbic acid tablets found under-strength",
+            reason="Zyxwvutest compound tablets found under-strength",
             classification=RecallClassification.CLASS_III,
             status=RecallStatus.ONGOING,
             source_id=source_id,
@@ -124,7 +124,7 @@ def test_retrieve_merges_and_ranks_across_entity_types(db_session: Session) -> N
     )
     db_session.flush()
 
-    results = retrieve(db_session, "ascorbic acid", limit=10)
+    results = retrieve(db_session, "zyxwvutest compound", limit=10)
 
     entity_types = {r.entity_type for r in results}
     assert entity_types == {"ingredient", "product", "warning", "recall"}
@@ -136,6 +136,9 @@ def test_retrieve_merges_and_ranks_across_entity_types(db_session: Session) -> N
     product_evidence = next(r for r in results if r.entity_type == "product")
     assert "Acme Pharma" in product_evidence.content
     assert "precaution" in product_evidence.content.lower()
+
+    ingredient_evidence = next(r for r in results if r.entity_type == "ingredient")
+    assert ingredient_evidence.external_url is None
 
 
 def test_retrieve_respects_limit_across_merged_results(db_session: Session) -> None:
@@ -155,8 +158,8 @@ def test_retrieve_respects_limit_across_merged_results(db_session: Session) -> N
 def test_retrieve_no_match_returns_empty(db_session: Session) -> None:
     source_id = _make_source(db_session)
     ingredient_repository(db_session).create(
-        name="Naproxen", normalized_name="naproxen", source_id=source_id
+        name="Qwexnol", normalized_name="qwexnol", source_id=source_id
     )
     db_session.flush()
 
-    assert retrieve(db_session, "acetaminophen") == []
+    assert retrieve(db_session, "unobtainium-test-drug") == []

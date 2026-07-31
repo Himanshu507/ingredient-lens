@@ -19,6 +19,10 @@ _WARNING_SECTION_CODES: dict[str, WarningCategoryLiteral] = {
     "43685-7": "precaution",  # WARNINGS AND PRECAUTIONS SECTION (combined, PLR-format labels)
 }
 
+# See ingestion/dailymed/document_metadata.py's _PARSER comment: real SPL
+# documents legitimately nest deeper than lxml's default 256-depth guard.
+_PARSER = etree.XMLParser(huge_tree=True)
+
 
 @dataclass(frozen=True)
 class WarningCandidate:
@@ -40,7 +44,7 @@ class WarningExtractor:
     """
 
     def extract(self, xml_bytes: bytes) -> list[WarningCandidate]:
-        root = etree.fromstring(xml_bytes)
+        root = etree.fromstring(xml_bytes, parser=_PARSER)
         candidates: list[WarningCandidate] = []
 
         for code, category in _WARNING_SECTION_CODES.items():

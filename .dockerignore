@@ -1,0 +1,23 @@
+# Real bulk downloads (tens of GB) -- never belongs in a build context.
+# Missing this file meant `docker build` was transferring 27GB+ of
+# downloaded openFDA/DailyMed data as build context on every build.
+data/bulk/
+**/data/bulk/
+
+.git/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+.env
+
+.idea/
+.DS_Store
+
+.playwright-mcp/
+assets/screenshots/
+
+node_modules/

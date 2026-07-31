@@ -18,10 +18,12 @@ from database.models.enums import (
     RecallClassification,
     RecallStatus,
     RecordStatus,
+    ReferenceType,
     WarningCategory,
 )
 from database.models.product import ProductIngredient
 from database.models.recall import Recall
+from database.models.reference import Reference
 from database.models.source import Source
 from database.models.warning import Warning
 
@@ -151,6 +153,89 @@ def test_search_products_returns_full_provenance_and_associations(db_session: Se
     assert len(hit.recalls) == 1
     assert hit.recalls[0].classification == "class_ii"
     assert hit.source.source_system == "test"
+
+
+def test_product_warning_recall_hits_link_to_dailymed_when_spl_set_id_known(
+    db_session: Session,
+) -> None:
+    """A citation is only independently verifiable if a user can actually
+    click through to it -- both openFDA and DailyMed ingestion attach a
+    Reference(SPL_SET_ID) to every Product (ingestion/openfda/persistence.py,
+    ingestion/dailymed/persistence.py), which resolves to a real DailyMed
+    label page regardless of which adapter ingested the record."""
+    source_id = _make_source(db_session)
+    manufacturer = manufacturer_repository(db_session).create(
+        name="Acme Pharma", normalized_name="acme pharma", source_id=source_id
+    )
+    product = product_repository(db_session).create(
+        name="Vitamin C Tablets",
+        product_type="dietary supplement",
+        dosage_form="tablet",
+        manufacturer_id=manufacturer.id,
+        source_id=source_id,
+    )
+    db_session.add(
+        Reference(
+            entity_type=EntityType.PRODUCT,
+            entity_id=product.id,
+            reference_type=ReferenceType.SPL_SET_ID,
+            reference_value="11111111-1111-1111-1111-111111111111",
+            source_id=source_id,
+        )
+    )
+    db_session.add(
+        Warning(
+            product_id=product.id,
+            category=WarningCategory.PRECAUTION,
+            text="Do not exceed the recommended daily dose",
+            status=RecordStatus.ACTIVE,
+            version_number=1,
+            source_id=source_id,
+        )
+    )
+    db_session.add(
+        Recall(
+            product_id=product.id,
+            manufacturer_id=manufacturer.id,
+            reason="Possible contamination found in tablets",
+            classification=RecallClassification.CLASS_II,
+            status=RecallStatus.ONGOING,
+            source_id=source_id,
+        )
+    )
+    db_session.flush()
+
+    expected_url = (
+        "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm"
+        "?setid=11111111-1111-1111-1111-111111111111"
+    )
+
+    product_hits = search_products(db_session, "vitamin c tablets")
+    assert product_hits[0].external_url == expected_url
+
+    warning_hits = search_warnings(db_session, "exceed")
+    assert warning_hits[0].external_url == expected_url
+
+    recall_hits = search_recalls(db_session, "contamination")
+    assert recall_hits[0].external_url == expected_url
+
+
+def test_product_hit_external_url_is_none_without_a_spl_set_id_reference(
+    db_session: Session,
+) -> None:
+    source_id = _make_source(db_session)
+    product_repository(db_session).create(
+        name="No Reference Product",
+        product_type=None,
+        dosage_form=None,
+        manufacturer_id=None,
+        source_id=source_id,
+    )
+    db_session.flush()
+
+    hits = search_products(db_session, "no reference product")
+
+    assert hits[0].external_url is None
 
 
 def test_search_warnings_returns_owning_product(db_session: Session) -> None:

@@ -2,45 +2,423 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Regulatory Intelligence Engine</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
-  section { margin-bottom: 2.5rem; }
-  input[type="text"] { width: 70%; padding: 0.5rem; font-size: 1rem; }
-  button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
-  .group-heading { font-weight: 600; margin-top: 1rem; text-transform: capitalize; }
-  .hit { border: 1px solid #ddd; border-radius: 4px; padding: 0.6rem 0.8rem; margin: 0.4rem 0; }
-  .hit .provenance { color: #666; font-size: 0.85rem; margin-top: 0.3rem; }
-  .status { color: #666; font-style: italic; }
-  .answer-text { white-space: pre-line; border: 1px solid #ddd; border-radius: 4px; padding: 0.8rem; background: #fafafa; }
-  .answer-text.insufficient { color: #a33; background: #fff5f5; }
-  .references { margin-top: 0.6rem; font-size: 0.85rem; color: #444; }
-  .references li { margin: 0.2rem 0; }
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #e2e5ea;
+    --text: #1a1d23;
+    --text-muted: #6b7280;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --danger-text: #b42318;
+    --badge-bg: #eef2ff;
+    --badge-text: #3730a3;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --border: #2a2e37;
+      --text: #e6e8eb;
+      --text-muted: #9aa1ac;
+      --accent: #4f8dfd;
+      --accent-text: #0f1115;
+      --danger-bg: #2a1416;
+      --danger-border: #5c2327;
+      --danger-text: #ff8b8b;
+      --badge-bg: #1e2340;
+      --badge-text: #b6c0ff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  header p {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  @media (min-width: 860px) {
+    main { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+  /* When the ask panel is hidden, collapse back to a single, centered
+     column instead of leaving a dead empty half. */
+  main:has(#ask-section[hidden]) {
+    grid-template-columns: 1fr !important;
+    max-width: 700px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 1.1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .panel[hidden] {
+    display: none;
+  }
+  .panel h2 {
+    font-size: 1rem;
+    margin: 0 0 0.2rem;
+  }
+  .panel .hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 0 0.75rem;
+  }
+  form.query-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+  }
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.92rem;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  button {
+    padding: 0.55rem 1rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    border-radius: 7px;
+    background: var(--accent);
+    color: var(--accent-text);
+    white-space: nowrap;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.6; cursor: default; }
+
+  .results {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+  }
+  .group {
+    margin-bottom: 0.9rem;
+  }
+  .group:last-child { margin-bottom: 0; }
+  .group-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+  .group-heading .count {
+    background: var(--badge-bg);
+    color: var(--badge-text);
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .hit {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    margin: 0.35rem 0;
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  .hit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+  .category-badge {
+    background: var(--badge-bg);
+    color: var(--badge-text);
+    border-radius: 5px;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .source-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.76rem;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .source-link:hover { text-decoration: underline; }
+  .hit .title {
+    font-weight: 500;
+    color: var(--text);
+  }
+  .hit-text {
+    color: var(--text);
+  }
+  .hit-text.clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hit .provenance {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    margin-top: 0.3rem;
+  }
+  .show-more {
+    background: none;
+    color: var(--accent);
+    padding: 0.3rem 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .show-more:hover { text-decoration: underline; filter: none; }
+
+  .status {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.88rem;
+  }
+
+  .answer-text {
+    white-space: pre-line;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    background: var(--bg);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .answer-text.insufficient {
+    color: var(--danger-text);
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+  }
+  .references {
+    margin: 0.7rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .references li {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.3rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .ref-label { flex: 1; }
+  .references .source-link { margin-left: 0; }
+  .ref-badge {
+    background: var(--badge-bg);
+    color: var(--badge-text);
+    border-radius: 5px;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .hit.clickable { cursor: pointer; }
+  .hit.clickable:hover { border-color: var(--accent); }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 17, 21, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 100;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    max-width: min(980px, 92vw);
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+  .modal-close {
+    background: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { color: var(--text); filter: none; }
+  .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 1.5rem 1.75rem;
+  }
+  .modal-field {
+    margin-bottom: 1.25rem;
+  }
+  .modal-field:last-child { margin-bottom: 0; }
+  .modal-field .field-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .modal-field .field-value {
+    font-size: 1.02rem;
+    line-height: 1.75;
+  }
+  .modal-field .field-value p {
+    margin: 0 0 0.9rem;
+  }
+  .modal-field .field-value p:last-child { margin-bottom: 0; }
+  .modal-field .field-value p.list-item {
+    padding-left: 1.6rem;
+    text-indent: -1.6rem;
+  }
+  .modal-field .field-value p.list-item .item-number {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .modal-field.provenance-field .field-value {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .modal-header-left .source-link {
+    font-size: 0.85rem;
+  }
 </style>
 </head>
 <body>
-  <h1>Regulatory Intelligence Engine</h1>
+  <header>
+    <h1>Regulatory Intelligence Engine</h1>
+    <p>Search canonical ingredient/product data.</p>
+  </header>
 
-  <section id="search-section">
-    <h2>Search</h2>
-    <form id="search-form">
-      <input type="text" id="search-query" placeholder="e.g. vitamin c" required />
-      <button type="submit">Search</button>
-    </form>
-    <div id="search-results"></div>
-  </section>
+  <main>
+    <section class="panel" id="search-section">
+      <h2>Search</h2>
+      <p class="hint">Ingredients, products, warnings, recalls — keyword search.</p>
+      <form class="query-form" id="search-form">
+        <input type="text" id="search-query" placeholder="e.g. vitamin c" required />
+        <button type="submit">Search</button>
+      </form>
+      <div id="search-results"></div>
+    </section>
 
-  <section id="ask-section">
-    <h2>Ask a question</h2>
-    <form id="ask-form">
-      <input type="text" id="ask-question" placeholder="e.g. what liver warnings does acetaminophen have?" required />
-      <button type="submit">Ask</button>
-    </form>
-    <div id="ask-result"></div>
-  </section>
+    <!-- Ask-a-question UI hidden for now (search-only focus) -- backend
+         /ask endpoint and all ai/ code are untouched, just not exposed
+         here. Remove the `hidden` attribute below to bring it back. -->
+    <section class="panel" id="ask-section" hidden>
+      <h2>Ask a question</h2>
+      <p class="hint">Answers are grounded in retrieved evidence, with citations.</p>
+      <form class="query-form" id="ask-form">
+        <input type="text" id="ask-question" placeholder="e.g. what liver warnings does acetaminophen have?" required />
+        <button type="submit">Ask</button>
+      </form>
+      <div id="ask-result"></div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="detail-modal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="category-badge" id="modal-badge" hidden></span>
+          <a class="source-link" id="modal-source-link" target="_blank" rel="noopener noreferrer" hidden>View original source ↗</a>
+        </div>
+        <button type="button" class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <div class="field-label">Content</div>
+          <div class="field-value" id="modal-text"></div>
+        </div>
+        <div class="modal-field provenance-field">
+          <div class="field-label">Provenance</div>
+          <div class="field-value" id="modal-provenance"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
+const PREVIEW_COUNT = 5;
+
 function escapeHtml(s) {
   const div = document.createElement("div");
   div.textContent = s;
@@ -48,7 +426,7 @@ function escapeHtml(s) {
 }
 
 function provenanceHtml(source) {
-  return `<div class="provenance">Source: ${escapeHtml(source.source_system)} / ${escapeHtml(source.endpoint_or_document_type)}, ingested ${escapeHtml(source.ingested_at)}</div>`;
+  return `<div class="provenance">${escapeHtml(source.source_system)} / ${escapeHtml(source.endpoint_or_document_type)} · ingested ${escapeHtml(source.ingested_at)}</div>`;
 }
 
 const SEARCH_ENDPOINTS = [
@@ -58,13 +436,153 @@ const SEARCH_ENDPOINTS = [
   ["recalls", "/recalls"],
 ];
 
+function hitLabel(entityType, hit) {
+  if (entityType === "ingredients") return hit.name;
+  if (entityType === "products") return hit.name;
+  if (entityType === "warnings") return hit.text;
+  return `${hit.reason} (${hit.classification}, ${hit.status})`;
+}
+
+// Only this small badge/link is ever clickable inline -- the descriptive
+// text itself stays plain, non-underlined text (per user feedback: making
+// the whole content block look clickable was confusing). Clicking the card
+// itself opens the detail modal instead (wireHitClicks below).
+function sourceLinkHtml(externalUrl) {
+  if (!externalUrl) return "";
+  return `<a class="source-link" href="${escapeHtml(externalUrl)}" target="_blank" rel="noopener noreferrer" title="View the original source label on DailyMed (opens in a new tab)">Source ↗</a>`;
+}
+
+let hitRegistry = [];
+
 function renderHit(entityType, hit) {
-  let label;
-  if (entityType === "ingredients") label = hit.name;
-  else if (entityType === "products") label = hit.name;
-  else if (entityType === "warnings") label = `[${hit.category}] ${hit.text}`;
-  else label = `${hit.reason} (${hit.classification}, ${hit.status})`;
-  return `<div class="hit">${escapeHtml(label)}${provenanceHtml(hit.source)}</div>`;
+  const badge =
+    entityType === "warnings" ? `<span class="category-badge">${escapeHtml(hit.category)}</span>` : "";
+  const header =
+    badge || hit.external_url
+      ? `<div class="hit-header">${badge}${sourceLinkHtml(hit.external_url)}</div>`
+      : "";
+
+  const label = hitLabel(entityType, hit);
+  const body =
+    entityType === "warnings"
+      ? `<div class="hit-text clamped">${escapeHtml(label)}</div>`
+      : `<div class="title">${escapeHtml(label)}</div>`;
+
+  const hitIndex = hitRegistry.push({ entityType, hit }) - 1;
+  return `<div class="hit clickable" data-hit-index="${hitIndex}">${header}${body}${provenanceHtml(hit.source)}</div>`;
+}
+
+function renderGroup(entityType, hits) {
+  const preview = hits.slice(0, PREVIEW_COUNT);
+  const rest = hits.slice(PREVIEW_COUNT);
+  const groupId = `group-${entityType}-${Math.random().toString(36).slice(2, 8)}`;
+
+  let html = `<div class="group">`;
+  html += `<div class="group-heading">${escapeHtml(entityType)} <span class="count">${hits.length}</span></div>`;
+  html += preview.map((hit) => renderHit(entityType, hit)).join("");
+  if (rest.length > 0) {
+    html += `<div id="${groupId}-rest" style="display:none">${rest.map((hit) => renderHit(entityType, hit)).join("")}</div>`;
+    html += `<button type="button" class="show-more" data-target="${groupId}-rest">Show ${rest.length} more</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function wireShowMoreButtons(container) {
+  container.querySelectorAll(".show-more").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = document.getElementById(btn.dataset.target);
+      target.style.display = "block";
+      btn.remove();
+    });
+  });
+}
+
+const modalOverlay = document.getElementById("detail-modal");
+const modalBadge = document.getElementById("modal-badge");
+const modalText = document.getElementById("modal-text");
+const modalProvenance = document.getElementById("modal-provenance");
+const modalSourceLink = document.getElementById("modal-source-link");
+
+// Source text arrives as one dense run (source SPL documents rarely carry
+// real paragraph breaks). Break it into readable chunks instead of dumping
+// it as a single blob: numbered warnings ("1. ... 2. ...") become a list
+// with the number pulled out and bolded; plain prose gets split into
+// 2-sentence paragraphs. Falls back to a single paragraph either way if
+// the text doesn't have enough structure to split.
+function formatRichText(text) {
+  const numberedMarker = /(?=\d+\.\s)/;
+  if (numberedMarker.test(text)) {
+    const segments = text
+      .split(numberedMarker)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (segments.length > 1) {
+      return segments
+        .map((segment) => {
+          const match = segment.match(/^(\d+)\.\s*([\s\S]*)$/);
+          if (match) {
+            return `<p class="list-item"><span class="item-number">${match[1]}.</span> ${escapeHtml(match[2])}</p>`;
+          }
+          return `<p>${escapeHtml(segment)}</p>`;
+        })
+        .join("");
+    }
+  }
+
+  const sentences = text
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (sentences.length > 2) {
+    const paragraphs = [];
+    for (let i = 0; i < sentences.length; i += 2) {
+      paragraphs.push(sentences.slice(i, i + 2).join(" "));
+    }
+    return paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+  }
+
+  return `<p>${escapeHtml(text)}</p>`;
+}
+
+function openHitModal(entityType, hit) {
+  if (entityType === "warnings") {
+    modalBadge.textContent = hit.category;
+    modalBadge.hidden = false;
+  } else {
+    modalBadge.hidden = true;
+  }
+  modalText.innerHTML = formatRichText(hitLabel(entityType, hit));
+  modalProvenance.textContent = `${hit.source.source_system} / ${hit.source.endpoint_or_document_type} · ingested ${hit.source.ingested_at}`;
+  if (hit.external_url) {
+    modalSourceLink.href = hit.external_url;
+    modalSourceLink.hidden = false;
+  } else {
+    modalSourceLink.hidden = true;
+  }
+  modalOverlay.hidden = false;
+}
+
+function closeModal() {
+  modalOverlay.hidden = true;
+}
+
+document.getElementById("modal-close").addEventListener("click", closeModal);
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !modalOverlay.hidden) closeModal();
+});
+
+function wireHitClicks(container) {
+  container.querySelectorAll(".hit.clickable").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("a")) return; // let the Source link navigate normally
+      const entry = hitRegistry[Number(el.dataset.hitIndex)];
+      if (entry) openHitModal(entry.entityType, entry.hit);
+    });
+  });
 }
 
 document.getElementById("search-form").addEventListener("submit", async (e) => {
@@ -72,7 +590,8 @@ document.getElementById("search-form").addEventListener("submit", async (e) => {
   const query = document.getElementById("search-query").value.trim();
   const resultsEl = document.getElementById("search-results");
   if (!query) return;
-  resultsEl.innerHTML = '<p class="status">Searching...</p>';
+  resultsEl.innerHTML = '<p class="status">Searching…</p>';
+  hitRegistry = [];
 
   try {
     const responses = await Promise.all(
@@ -81,14 +600,18 @@ document.getElementById("search-form").addEventListener("submit", async (e) => {
       )
     );
 
-    let html = "";
+    let html = '<div class="results">';
+    let any = false;
     responses.forEach((hits, i) => {
       const [entityType] = SEARCH_ENDPOINTS[i];
       if (hits.length === 0) return;
-      html += `<div class="group-heading">${entityType} (${hits.length})</div>`;
-      html += hits.map((hit) => renderHit(entityType, hit)).join("");
+      any = true;
+      html += renderGroup(entityType, hits);
     });
-    resultsEl.innerHTML = html || '<p class="status">No results.</p>';
+    html += "</div>";
+    resultsEl.innerHTML = any ? html : '<p class="status">No results.</p>';
+    wireShowMoreButtons(resultsEl);
+    wireHitClicks(resultsEl);
   } catch (err) {
     resultsEl.innerHTML = `<p class="status">Search failed: ${escapeHtml(String(err))}</p>`;
   }
@@ -99,7 +622,7 @@ document.getElementById("ask-form").addEventListener("submit", async (e) => {
   const question = document.getElementById("ask-question").value.trim();
   const resultEl = document.getElementById("ask-result");
   if (!question) return;
-  resultEl.innerHTML = '<p class="status">Thinking...</p>';
+  resultEl.innerHTML = '<p class="status">Thinking…</p>';
 
   try {
     const response = await fetch("/ask", {
@@ -117,10 +640,11 @@ document.getElementById("ask-form").addEventListener("submit", async (e) => {
     if (answer.references && answer.references.length > 0) {
       html += '<ul class="references">';
       html += answer.references
-        .map(
-          (ref) =>
-            `<li>[${ref.number}] ${escapeHtml(ref.entity_type)} ${escapeHtml(ref.entity_id)} -- ${escapeHtml(ref.source.source_system)} / ${escapeHtml(ref.source.endpoint_or_document_type)}</li>`
-        )
+        .map((ref) => {
+          const label = escapeHtml(`${ref.entity_type} ${ref.entity_id}`);
+          const source = escapeHtml(`${ref.source.source_system} / ${ref.source.endpoint_or_document_type}`);
+          return `<li><span class="ref-badge">${ref.number}</span> <span class="ref-label">${label} — ${source}</span> ${sourceLinkHtml(ref.external_url)}</li>`;
+        })
         .join("");
       html += "</ul>";
     }

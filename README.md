@@ -1,1046 +1,181 @@
 # Regulatory Intelligence Engine (RIE)
 
-> **Build the data engine first. AI comes later.**
->
-> This project is designed to demonstrate data engineering, system architecture, AI integration, and product thinking through a production-quality regulatory intelligence platform.
+A data engine that ingests real FDA regulatory data (openFDA + DailyMed), reconciles it into one canonical, versioned, entity-resolved knowledge model, and exposes it through a search API and a citation-grounded AI layer that can't hallucinate a fact it can't point to.
+
+**The data engine is the product, not the AI.** An LLM wrapped around messy, duplicated, unversioned government data is a liability — it hallucinates confidently and cites nothing. The actual hard problem is reconciling scattered regulatory data correctly: knowing that "Vitamin C" from one source and "Ascorbic Acid" from another are the same entity, keeping every fact traceable to its source document, and never losing that trail once an AI layer sits on top. That reconciliation is what this project is actually about.
 
 ---
 
-# Vision
+## Screenshots
 
-The goal of this project is **NOT** to build an AI chatbot.
+**Search — real data, clickable sources**
 
-The goal is to build a **Regulatory Intelligence Engine** capable of ingesting heterogeneous government regulatory datasets, transforming them into a canonical knowledge model, and exposing trustworthy data for AI reasoning.
+![Search results](assets/screenshots/02_search_results.png)
 
-Think of this as building the **engine** behind a future compliance platform.
+Every result — ingredient, product, warning, recall — traces back to a real source document. The "Source ↗" link isn't decorative; it opens the actual DailyMed label page for that exact record.
 
----
+**Structured detail view**
 
-# Why This Project Exists
+![Detail modal](assets/screenshots/03_detail_modal.png)
 
-Regulatory information is scattered across:
+Long warning text (SPL documents don't carry real paragraph breaks) gets parsed into readable, numbered points instead of one dense block.
 
-* Government APIs
-* XML files
-* PDFs
-* Product labels
-* Recall databases
-* Scientific publications
-* Safety announcements
+**Empty state**
 
-Every source has:
-
-* Different schemas
-* Different identifiers
-* Different update frequencies
-* Different naming conventions
-* Different quality
-
-Today companies spend hundreds of hours manually searching these sources.
-
-This project solves one problem:
-
-> **How do we transform messy regulatory data into one trusted source of truth?**
+![Search, empty state](assets/screenshots/01_search_empty.png)
 
 ---
 
-# What We Are NOT Building
+## What's Actually Built
 
-This is equally important.
+Not aspirational — every item below is implemented, tested, and has been run against real government data at real scale (147,732 products, 12,981 canonical ingredients, ~3.3GB, ingested from live openFDA API pulls and DailyMed bulk exports).
 
-We are NOT building:
+- **Resumable, idempotent ingestion** for both sources — checkpointed, safe to re-run, streaming-parsed so memory stays bounded regardless of file size (verified against multi-GB DailyMed bulk exports).
+- **Dead-letter queue** — a malformed record gets logged and skipped, never halts a run; per-record `SAVEPOINT` isolation so one bad record can't roll back the batch.
+- **Entity resolution** across sources — authoritative-ID matching (UNII/CAS/DUNS) first, exact normalized-name match second, trigram fuzzy matching with a 3-tier confidence system (auto-merge / queue-for-review / no-match) last. Deliberately does *not* fuzzy-match "Vitamin C" to "Ascorbic Acid" on string similarity alone (confirmed `similarity() = 0.0` — real chemical synonymy needs a real synonym table, not a distance metric pretending it can guess one).
+- **Full versioning** — nothing overwrites in place. Every accepted change creates a new version; retracted/superseded records stay queryable but don't surface in default search.
+- **Full-text search** — PostgreSQL `tsvector`/GIN, `ts_rank`-scored, across ingredients, products, warnings, and recalls, each carrying full provenance.
+- **AI layer with real tool-calling** — the model gets one bounded, read-only `search_evidence` tool and decides its own search queries, reformulating and retrying if a search comes back empty (so a bare product name typed into the ask box still works, not just a well-phrased question). Every claim in the final answer is programmatically checked against the evidence it cites; an answer with an uncited or fabricated claim never reaches the user — it's replaced with an explicit "no evidence found," never shown as-is.
+- **Real citations, not citation numbers that go nowhere** — every reference resolves to a live DailyMed URL for the actual source label.
+- **Operational read views** — per-source health, day-by-day trend, and entity-resolution backlog, built only from the tables that already exist (no shadow analytics store).
 
-* ❌ FDA approval software
-* ❌ Legal compliance software
-* ❌ Regulatory submission software
-* ❌ Enterprise workflow management
-* ❌ Document management system
-* ❌ AI chatbot
-
-Those are products built **on top of** this engine.
+Also documented, not hidden: real, known limitations — phase-1 keyword search has no cross-document rarity weighting (a common word can outrank a rare, correct match; semantic/vector retrieval is the planned real fix, not a patch); a few resolution-strategy metrics aren't derivable from the current schema without further instrumentation. See [`docs/ROADMAP.md`](docs/ROADMAP.md)'s deferred-work table.
 
 ---
 
-# What We ARE Building
-
-We are building the infrastructure layer.
+## Architecture
 
 ```
-Government Sources
-
-↓
-
-Data Ingestion
-
-↓
-
-Normalization
-
-↓
-
-Canonical Knowledge Model
-
-↓
-
-Search API
-
-↓
-
-AI Reasoning Layer
+openFDA (REST API + bulk export)  ─┐
+                                    ├─▶  Validate → Transform → Entity Resolution → PostgreSQL
+DailyMed (SPL XML, bulk export)   ─┘         (canonical model: Ingredient, Product,
+                                               Warning, Recall, Manufacturer, versioned)
+                                                        │
+                                                        ▼
+                                          Full-text Search API (FastAPI)
+                                                        │
+                                                        ▼
+                                    AI layer (tool-calling retrieval + citation
+                                       verification) ── never bypasses the API,
+                                       never touches raw source payloads
+                                                        │
+                                                        ▼
+                                        Minimal static UI (search + detail view)
 ```
 
-Everything revolves around **data quality**.
-
----
-
-# Engineering Philosophy
-
-This project follows one rule.
-
-> Build brick by brick.
-
-Not module by module.
-
-Each brick should:
-
-* compile
-* run
-* be testable
-* improve the system
-
-Never leave partially completed architecture.
-
----
-
-# Building Strategy
-
-Instead of this
+Organized by engineering layer, not by feature — a single canonical `Recall` entity is populated by multiple sources and consumed by multiple endpoints, so there's no single "feature folder" that owns it:
 
 ```
-Week 1
-
-Authentication
-
-Week 2
-
-Dashboard
-
-Week 3
-
-AI
-
-Week 4
-
-Database
+ingestion/       # One subpackage per source (openfda/, dailymed/), shared retry/checkpoint logic in common/
+normalization/   # Pure string/unit normalization -- no DB access, no network
+resolution/      # Entity resolution + deduplication engine
+database/        # SQLAlchemy models, Alembic migrations, the query layer
+api/              # FastAPI app -- thin, composes database/search queries into HTTP responses
+ai/               # The only directory allowed to call an LLM. Retrieval, prompting, tool-calling, citation verification
+frontend/         # Single static HTML/CSS/JS page, no build step, no framework
+scripts/          # Bulk data download, ingestion runner, JSON schema inspector
+tests/            # unit/, integration/ (real Postgres via docker, never mocked), golden/ (parser fixtures)
+docs/             # Full engineering doc set -- design rationale for every decision below
 ```
 
-We build vertically.
-
-Every brick should extend the previous one.
-
-```
-Brick 1
-
-Project
-
-↓
-
-Brick 2
-
-Database
-
-↓
-
-Brick 3
-
-One Table
-
-↓
-
-Brick 4
-
-One API
-
-↓
-
-Brick 5
-
-One Parser
-
-↓
-
-Brick 6
-
-One Source
-
-↓
-
-Brick 7
-
-Normalization
-
-↓
-
-Brick 8
-
-Search
-
-↓
-
-Brick 9
-
-AI
-```
-
-At every stage the project works.
+`docs/` has the long-form reasoning behind every non-obvious decision: why RAG and not fine-tuning ([`AI_PIPELINE.md`](docs/AI_PIPELINE.md)), why bulk downloads *and* the live API both exist ([`OPENFDA_INGESTION.md`](docs/OPENFDA_INGESTION.md)), why entity resolution needs three separate strategies ([`ENTITY_RESOLUTION.md`](docs/ENTITY_RESOLUTION.md)), and the full 17-brick build history ([`ROADMAP.md`](docs/ROADMAP.md)).
 
 ---
 
-# Golden Rule
+## Tech Stack
 
-Never build functionality without data.
-
-Never build AI without structured data.
-
-Never build UI without APIs.
-
----
-
-# Technology Stack
-
-Backend
-
-* Python
-* FastAPI
-
-Database
-
-* PostgreSQL
-
-ORM
-
-* SQLAlchemy
-
-Search
-
-* PostgreSQL Full Text Search
-* Elasticsearch/OpenSearch (future)
-
-Background Jobs
-
-* Celery or Temporal (future)
-
-AI
-
-* LangGraph
-* LangChain
-* OpenAI / Anthropic
-
-Storage
-
-* S3 (future)
-
-Testing
-
-* Pytest
-
-Deployment
-
-* Docker
-* Docker Compose
-
-CI
-
-* GitHub Actions
+| Layer | Choice |
+|---|---|
+| Language | Python 3.11 |
+| API | FastAPI |
+| Database | PostgreSQL 16 (full-text search via `tsvector`/GIN, no separate search engine yet) |
+| ORM / migrations | SQLAlchemy 2.0 + Alembic |
+| AI | OpenAI (`gpt-4o-mini` by default), tool-calling, no framework (no LangChain/LangGraph) |
+| Frontend | Vanilla HTML/CSS/JS, zero build step |
+| Package management | [uv](https://docs.astral.sh/uv/) |
+| Quality gates | `ruff` (lint + format), `mypy --strict`, `pytest` against a real dockerized Postgres |
+| Containerization | Docker + Docker Compose |
 
 ---
 
-# Initial Data Sources
-
-## Source 1
-
-openFDA
-
-Purpose
-
-* recalls
-* adverse events
-* enforcement
-* drug labels
-
----
-
-## Source 2
-
-DailyMed
-
-Purpose
-
-* SPL XML
-* ingredients
-* warnings
-* dosage
-* package inserts
-
----
-
-# Future Sources
-
-FDA SRS
-
-GRAS
-
-21 CFR
-
-NIH
-
-EFSA
-
-Health Canada
-
-FSSAI
-
-PubMed
-
----
-
-# High Level Architecture
-
-```
-                   openFDA
-                      │
-                      ▼
-              OpenFDA Adapter
-                      │
-                      ▼
-
-                 Canonical Model
-
-                      ▲
-
-                      │
-
-             DailyMed Adapter
-
-                      ▲
-
-                      │
-
-                 DailyMed XML
-
-                      │
-
-                      ▼
-
-              Validation Layer
-
-                      │
-
-                      ▼
-
-          Ingredient Normalizer
-
-                      │
-
-                      ▼
-
-              Entity Resolver
-
-                      │
-
-                      ▼
-
-               PostgreSQL
-
-                      │
-
-                      ▼
-
-                Search API
-
-                      │
-
-                      ▼
-
-               AI Reasoning
-```
-
----
-
-# Repository Structure
-
-```
-regulatory-intelligence-engine/
-
-docs/
-
-backend/
-
-database/
-
-ingestion/
-
-normalization/
-
-api/
-
-ai/
-
-scripts/
-
-tests/
-
-docker/
-
-.github/
-```
-
-No feature folders.
-
-Only engineering layers.
-
----
-
-# Getting Started
+## Getting Started
 
 Prerequisites: Docker, Docker Compose, [uv](https://docs.astral.sh/uv/).
 
+```bash
+git clone https://github.com/Himanshu507/ingredient-lens.git
+cd ingredient-lens
+cp .env.example .env   # fill in OPENAI_API_KEY (only needed for the AI layer)
 ```
-cp .env.example .env   # fill in OPENAI_API_KEY for later bricks; defaults work for Brick 1
+
+**1. Bring up Postgres and the schema:**
+
+```bash
+docker compose up -d db
+uv run alembic upgrade head
+```
+
+**2. Get real data.** Nothing is seeded by default — see [`docs/openfda_downloads.md`](docs/openfda_downloads.md) and [`docs/dailymed_download.md`](docs/dailymed_download.md) for exactly which files to pull and why, or download automatically:
+
+```bash
+uv run python scripts/download_bulk_data.py --dry-run   # see what would be downloaded first
+uv run python scripts/download_bulk_data.py               # resumable, safe to re-run if interrupted
+```
+
+**3. Ingest it:**
+
+```bash
+uv run python scripts/run_ingestion.py --dry-run   # list what would be processed
+uv run python scripts/run_ingestion.py             # openFDA first, then DailyMed; progress bar per file
+```
+
+**4. Run the app:**
+
+```bash
 docker compose up --build
 ```
 
-This starts PostgreSQL and the FastAPI app (`http://localhost:8000`).
+Visit `http://localhost:8000/ui/` for the search UI, or hit the API directly (`GET /ingredients?q=acetaminophen`, `POST /ask` for the AI layer — see below).
 
-Apply the database schema (see [`docs/DATABASE_DESIGN.md`](./docs/DATABASE_DESIGN.md)):
+**Local (non-Docker) development:**
 
-```
-docker compose exec api uv run alembic upgrade head
-```
-
-For local (non-Docker) development:
-
-```
+```bash
 uv sync
 uv run pre-commit install
-docker compose up -d db   # local Postgres for tests/migrations
-uv run alembic upgrade head
 make lint typecheck test
 ```
 
 ---
 
-# Brick-by-Brick Roadmap
+## The AI Layer — Currently Disabled in the UI, Not in the Code
 
----
+The `POST /ask` endpoint and the entire `ai/` package (retrieval, tool-calling, citation verification) are fully implemented, tested, and working — verified against real data with a real LLM. The "Ask a question" panel is hidden in the current frontend by default (`hidden` attribute on `#ask-section` in `frontend/index.html`) while this project's focus is search — remove that attribute to bring it back; nothing else changes.
 
-# Brick 1
-
-Repository
-
-Goal
-
-Working repository.
-
-Tasks
-
-* initialize git
-* Docker
-* FastAPI
-* PostgreSQL
-* Makefile
-* pre-commit
-* Ruff
-* Black
-* mypy
-
-Done when
-
-```
-docker compose up
-```
-
-starts everything successfully.
-
----
-
-# Brick 2
-
-Database
-
-Goal
-
-One database.
-
-Nothing else.
-
-Tables
-
-```
-ingredients
-
-products
-
-sources
-
-aliases
-
-warnings
-
-recalls
-
-ingestion_logs
-```
-
-No APIs yet.
-
----
-
-# Brick 3
-
-Database Models
-
-Implement
-
-* SQLAlchemy models
-* Alembic
-* migrations
-
-Done when
-
-```
-alembic upgrade head
-```
-
-works.
-
----
-
-# Brick 4
-
-First API
-
-```
-GET /
-
-GET /health
-```
-
-Nothing more.
-
----
-
-# Brick 5
-
-First Source Adapter
-
-Only openFDA.
-
-Tasks
-
-* API client
-* pagination
-* retry
-* logging
-* parser
-
-Output
-
-Canonical Python objects.
-
-No database yet.
-
----
-
-# Brick 6
-
-Persist Data
-
-Save parsed data.
-
-Pipeline
-
-```
-API
-
-↓
-
-Parser
-
-↓
-
-Database
-```
-
-Done.
-
----
-
-# Brick 7
-
-DailyMed Adapter
-
-Repeat.
-
-Same interface.
-
-Different implementation.
-
-Adapters must implement identical methods.
-
-Example
-
-```
-fetch()
-
-parse()
-
-validate()
-
-save()
+```bash
+curl -X POST localhost:8000/ask -H "Content-Type: application/json" \
+  -d '{"question": "What liver warnings does acetaminophen have?"}'
 ```
 
 ---
 
-# Brick 8
+## Testing
 
-Canonical Model
-
-Now both sources map here.
-
-Never expose raw source models.
-
-Example
-
-```
-Ingredient
-
-Product
-
-Warning
-
-Recall
-```
-
-Every adapter converts to these.
-
----
-
-# Brick 9
-
-Normalization
-
-Example
-
-```
-Vitamin C
-
-↓
-
-Ascorbic Acid
-
-↓
-
-L-Ascorbic Acid
-
-↓
-
-ING-000123
-```
-
-No AI.
-
-Pure engineering.
-
----
-
-# Brick 10
-
-Deduplication
-
-Merge
-
-```
-openFDA
-
-Vitamin C
-```
-
-and
-
-```
-DailyMed
-
-ASCORBIC ACID
-```
-
-into
-
-```
-One ingredient.
+```bash
+docker compose up -d db
+uv run alembic upgrade head
+uv run pytest              # unit + integration, against a real Postgres, never mocked
+uv run ruff check .
+uv run mypy .
 ```
 
 ---
 
-# Brick 11
+## What This Demonstrates
 
-Search
-
-Endpoints
-
-```
-/ingredients
-
-/products
-
-/warnings
-
-/recalls
-```
+Data engineering and ETL pipeline design; resumable, idempotent ingestion against real, uncooperative government sources; entity resolution and deduplication; PostgreSQL schema/versioning design; retrieval-grounded AI that treats hallucination prevention as an architectural property, not a prompt instruction; and backend/API design — all in one coherent, brick-by-brick-built codebase, not a demo stitched together in a weekend.
 
 ---
 
-# Brick 12
+## License
 
-Search UI
-
-Very small.
-
-Search box.
-
-Nothing else.
-
----
-
-# Brick 13
-
-AI Layer
-
-Only now.
-
-Pipeline
-
-```
-Question
-
-↓
-
-Retriever
-
-↓
-
-Context
-
-↓
-
-LLM
-
-↓
-
-Answer
-
-↓
-
-Evidence
-```
-
-The LLM never accesses raw government sources.
-
----
-
-# Adapter Design
-
-Every source follows identical architecture.
-
-```
-Adapter
-
-↓
-
-Fetcher
-
-↓
-
-Parser
-
-↓
-
-Validator
-
-↓
-
-Transformer
-
-↓
-
-Saver
-```
-
-Every adapter should be swappable.
-
----
-
-# Canonical Models
-
-Core entities
-
-```
-Ingredient
-
-Product
-
-Manufacturer
-
-Warning
-
-Recall
-
-Source
-
-Reference
-
-Alias
-```
-
-Never leak source-specific fields into business logic.
-
----
-
-# Entity Resolution
-
-One of the hardest engineering problems.
-
-Example
-
-```
-Vitamin C
-
-Ascorbic Acid
-
-L-Ascorbic Acid
-
-E300
-```
-
-↓
-
-```
-One Ingredient
-```
-
-Use
-
-* synonym dictionary
-* CAS numbers
-* fuzzy matching
-* manual review
-
----
-
-# Versioning Strategy
-
-Never overwrite data.
-
-Instead
-
-```
-Ingredient
-
-Version 1
-
-Version 2
-
-Version 3
-```
-
-Every update becomes history.
-
----
-
-# Error Handling
-
-Every ingestion run should produce
-
-```
-Started
-
-↓
-
-Fetched
-
-↓
-
-Parsed
-
-↓
-
-Validated
-
-↓
-
-Saved
-
-↓
-
-Completed
-```
-
-Failures must be resumable.
-
----
-
-# Logging
-
-Every ingestion should record
-
-* runtime
-* failures
-* source
-* records fetched
-* records inserted
-* records updated
-* duplicates
-
----
-
-# AI Strategy
-
-The AI never decides compliance.
-
-It explains evidence.
-
-Wrong
-
-```
-FDA approved.
-```
-
-Correct
-
-```
-According to DailyMed...
-
-According to openFDA...
-
-Evidence...
-```
-
-AI explains.
-
-Rules decide.
-
----
-
-# Engineering Principles
-
-## Single Responsibility
-
-Every class has one job.
-
----
-
-## Adapters
-
-Every source is isolated.
-
----
-
-## Testability
-
-Everything should be mockable.
-
----
-
-## Observability
-
-Every pipeline should produce logs.
-
----
-
-## Idempotency
-
-Running ingestion twice should not duplicate data.
-
----
-
-## Reproducibility
-
-The same input always produces the same output.
-
----
-
-# Definition of Done
-
-Every brick must satisfy:
-
-* Working
-* Tested
-* Documented
-* Logged
-* Dockerized
-
-If not,
-
-it is not finished.
-
----
-
-# Future Roadmap
-
-Phase 2
-
-* FDA SRS
-
-Phase 3
-
-* GRAS
-
-Phase 4
-
-* 21 CFR
-
-Phase 5
-
-* Knowledge Graph
-
-Phase 6
-
-* Vector Search
-
-Phase 7
-
-* AI Reasoning
-
-Phase 8
-
-* Compliance Rules
-
-Phase 9
-
-* Multi-country Support
-
----
-
-# What This Project Demonstrates
-
-This project is intentionally designed to showcase skills valued in modern AI-native engineering teams:
-
-* System architecture
-* Data engineering
-* ETL pipeline design
-* Government data ingestion
-* Schema design
-* Entity resolution
-* Search infrastructure
-* Backend engineering
-* AI integration
-* Production thinking
-* Clean software architecture
-* Incremental delivery
-* Evidence-based AI systems
-
----
-
-# Final Principle
-
-> **The success of this project is not measured by how many features it has. It is measured by how trustworthy, maintainable, and extensible its data engine becomes. Every new capability should emerge naturally from a solid foundation rather than being bolted on afterwards.**
+MIT — see [`LICENSE`](LICENSE).

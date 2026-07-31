@@ -13,19 +13,30 @@ DATABASE_DESIGN.md Section 3's "application-level queries default to
 filtering out retracted/non-current records."
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from database.models.alias import Alias
-from database.models.enums import EntityType, RecordStatus
+from database.models.enums import EntityType, RecordStatus, ReferenceType
 from database.models.ingredient import Ingredient, IngredientVersion
 from database.models.manufacturer import Manufacturer
 from database.models.product import Product, ProductIngredient, ProductVersion
 from database.models.recall import Recall
+from database.models.reference import Reference
 from database.models.source import Source
 from database.models.warning import Warning
+
+# DailyMed's real, public per-label page. Both openFDA and DailyMed ingestion
+# attach a Reference(SPL_SET_ID) to every Product (see
+# ingestion/openfda/persistence.py and ingestion/dailymed/persistence.py) --
+# both sources' documents derive from the same FDA SPL corpus, so this link
+# resolves regardless of which adapter actually ingested the record. This is
+# what makes a citation independently verifiable rather than just a bulk-file
+# identifier a user has no way to act on.
+_DAILYMED_LABEL_URL = "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={set_id}"
 
 
 @dataclass(frozen=True)
@@ -45,12 +56,64 @@ def _provenance(session: Session, source_id: int) -> Provenance:
     )
 
 
-def _tsquery(query: str) -> sa.ColumnElement[str]:
+TsqueryBuilder = Callable[[str], sa.ColumnElement[str]]
+
+
+def build_tsquery(query: str) -> sa.ColumnElement[str]:
+    """AND across query words (the default, precise strategy): every
+    non-stopword lexeme in `query` must appear in the document. Correct and
+    high-precision for keyword-style queries (what the Search box sends).
+    """
     return sa.func.plainto_tsquery("english", query)
+
+
+def build_tsquery_or(query: str) -> sa.ColumnElement[str]:
+    """OR across query words -- a deliberate fallback, not the default.
+
+    Tried when `build_tsquery` (AND) finds nothing at all: a
+    natural-language-ish question ("Tell me about the Serious Skincare
+    product?") can otherwise return zero results the instant *any* single
+    word ("tell", "product") doesn't appear verbatim in a record, even when
+    the query's actual subject ("Serious Skincare") is a clean match on its
+    own.
+
+    Not used as the default everywhere: `ts_rank` isn't length/field-
+    normalized across different tsvector sources (a short product name vs.
+    a long warning paragraph), so under OR-matching a document matching one
+    generic word in a long field can outrank a document matching several
+    specific words in a short field -- verified empirically (a "Serious
+    Skincare" product-name match at rank 0.034 was outranked by unrelated
+    warning text matching only the generic word "product" at rank 0.064).
+    Falling back to OR only when AND finds nothing keeps that precision
+    problem from ever affecting a query that AND already answers well.
+    """
+    words = query.split()
+    if not words:
+        return sa.func.plainto_tsquery("english", query)
+    combined: sa.ColumnElement[str] = sa.func.plainto_tsquery("english", words[0])
+    for word in words[1:]:
+        combined = combined.op("||")(sa.func.plainto_tsquery("english", word))
+    return combined
+
+
+def _dailymed_label_url(session: Session, product_id: str) -> str | None:
+    set_id = session.execute(
+        sa.select(Reference.reference_value).where(
+            Reference.entity_type == EntityType.PRODUCT,
+            Reference.entity_id == product_id,
+            Reference.reference_type == ReferenceType.SPL_SET_ID,
+        )
+    ).scalar_one_or_none()
+    return _DAILYMED_LABEL_URL.format(set_id=set_id) if set_id else None
 
 
 @dataclass(frozen=True)
 class IngredientHit:
+    """No `external_url` here, deliberately: an ingredient isn't itself an
+    SPL document -- it can appear across many products' labels, so there's
+    no single correct page to link to (unlike Product/Warning/Recall, which
+    each belong to exactly one product's label)."""
+
     id: str
     name: str
     rank: float
@@ -58,7 +121,13 @@ class IngredientHit:
     source: Provenance
 
 
-def search_ingredients(session: Session, query: str, *, limit: int = 20) -> list[IngredientHit]:
+def search_ingredients(
+    session: Session,
+    query: str,
+    *,
+    limit: int = 20,
+    tsquery_builder: TsqueryBuilder = build_tsquery,
+) -> list[IngredientHit]:
     """Matches on the canonical name *or* a known alias.
 
     Aliases matter here specifically: after entity resolution
@@ -66,7 +135,7 @@ def search_ingredients(session: Session, query: str, *, limit: int = 20) -> list
     Acid" — searching the canonical name alone would never find it under
     the name a user is likely to actually search for.
     """
-    tsquery = _tsquery(query)
+    tsquery = tsquery_builder(query)
 
     name_matches = session.execute(
         sa.select(
@@ -162,6 +231,7 @@ class ProductHit:
     recalls: list[RecallRef]
     rank: float
     source: Provenance
+    external_url: str | None
 
 
 def _product_ingredients(session: Session, product_version_id: int) -> list[IngredientRef]:
@@ -212,8 +282,14 @@ def _product_recalls(session: Session, product_id: str) -> list[RecallRef]:
     ]
 
 
-def search_products(session: Session, query: str, *, limit: int = 20) -> list[ProductHit]:
-    tsquery = _tsquery(query)
+def search_products(
+    session: Session,
+    query: str,
+    *,
+    limit: int = 20,
+    tsquery_builder: TsqueryBuilder = build_tsquery,
+) -> list[ProductHit]:
+    tsquery = tsquery_builder(query)
     rows = session.execute(
         sa.select(Product.id, sa.func.ts_rank(ProductVersion.search_vector, tsquery).label("rank"))
         .join(ProductVersion, ProductVersion.id == Product.current_version_id)
@@ -242,6 +318,7 @@ def search_products(session: Session, query: str, *, limit: int = 20) -> list[Pr
                 recalls=_product_recalls(session, product.id),
                 rank=float(rank),
                 source=_provenance(session, current.source_id),
+                external_url=_dailymed_label_url(session, product.id),
             )
         )
     return hits
@@ -261,10 +338,17 @@ class WarningHit:
     rank: float
     product: ProductRef
     source: Provenance
+    external_url: str | None
 
 
-def search_warnings(session: Session, query: str, *, limit: int = 20) -> list[WarningHit]:
-    tsquery = _tsquery(query)
+def search_warnings(
+    session: Session,
+    query: str,
+    *,
+    limit: int = 20,
+    tsquery_builder: TsqueryBuilder = build_tsquery,
+) -> list[WarningHit]:
+    tsquery = tsquery_builder(query)
     rows = session.execute(
         sa.select(Warning, sa.func.ts_rank(Warning.search_vector, tsquery).label("rank"))
         .where(Warning.search_vector.op("@@")(tsquery), Warning.status == RecordStatus.ACTIVE)
@@ -288,6 +372,7 @@ def search_warnings(session: Session, query: str, *, limit: int = 20) -> list[Wa
                 rank=float(rank),
                 product=ProductRef(id=warning.product_id, name=product_name),
                 source=_provenance(session, warning.source_id),
+                external_url=_dailymed_label_url(session, warning.product_id),
             )
         )
     return hits
@@ -303,10 +388,17 @@ class RecallHit:
     product: ProductRef | None
     manufacturer: ManufacturerRef | None
     source: Provenance
+    external_url: str | None
 
 
-def search_recalls(session: Session, query: str, *, limit: int = 20) -> list[RecallHit]:
-    tsquery = _tsquery(query)
+def search_recalls(
+    session: Session,
+    query: str,
+    *,
+    limit: int = 20,
+    tsquery_builder: TsqueryBuilder = build_tsquery,
+) -> list[RecallHit]:
+    tsquery = tsquery_builder(query)
     rows = session.execute(
         sa.select(Recall, sa.func.ts_rank(Recall.search_vector, tsquery).label("rank"))
         .where(Recall.search_vector.op("@@")(tsquery))
@@ -317,10 +409,12 @@ def search_recalls(session: Session, query: str, *, limit: int = 20) -> list[Rec
     hits = []
     for recall, rank in rows:
         product_ref = None
+        external_url = None
         if recall.product_id is not None:
             product = session.get(Product, recall.product_id)
             if product is not None and product.current_version is not None:
                 product_ref = ProductRef(id=product.id, name=product.current_version.name)
+                external_url = _dailymed_label_url(session, recall.product_id)
         hits.append(
             RecallHit(
                 id=recall.id,
@@ -331,6 +425,7 @@ def search_recalls(session: Session, query: str, *, limit: int = 20) -> list[Rec
                 product=product_ref,
                 manufacturer=_product_manufacturer(session, recall.manufacturer_id),
                 source=_provenance(session, recall.source_id),
+                external_url=external_url,
             )
         )
     return hits
