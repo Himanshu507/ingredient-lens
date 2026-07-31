@@ -168,6 +168,8 @@ uv run ruff check .
 uv run mypy .
 ```
 
+**Known gap:** a subset of integration tests assert exact row counts (e.g. "exactly 2 ingredients exist after this resolution"). Those assertions only hold against an empty database. Run against this repo's own database after it's been through real bulk ingestion (147k+ products already committed), and ~20 of them fail — not because the code is broken, but because the fixtures were written assuming a pristine table and never updated to assert *count increased by N* instead of *count equals N*. Run the suite against a fresh, empty database (a second Postgres instance, or `docker compose down -v && docker compose up -d db && uv run alembic upgrade head` before ingesting anything) and all of them pass. Fixing the assertions themselves to be delta-based is on the roadmap, not yet done.
+
 ---
 
 ## What This Demonstrates
